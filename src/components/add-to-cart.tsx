@@ -27,6 +27,8 @@ export function AddToCart({ product }: { product: StoreProduct }) {
         product.options[0]?.values[0] === "Default Title"
       ));
 
+  const optionName = product.options[0]?.name ?? "Option";
+
   const optionLabel = hasOptions
     ? product.options
         .map((o, i) => {
@@ -43,51 +45,56 @@ export function AddToCart({ product }: { product: StoreProduct }) {
     : undefined;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {hasOptions && (
         <fieldset>
-          <legend className="mb-2 text-sm font-medium">
-            {product.options[0]?.name}
+          <legend className="mb-2.5 text-sm font-medium text-foreground/80">
+            {optionName}
           </legend>
           <div className="flex flex-wrap gap-2">
-            {product.variants.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                onClick={() => setVariantId(v.id)}
-                aria-pressed={variantId === v.id}
-                disabled={!v.available}
-                className={`min-w-11 rounded-md border px-3 py-2 text-sm transition-colors ${
-                  variantId === v.id
-                    ? "border-foreground bg-foreground text-background"
-                    : "hover:border-foreground disabled:opacity-40"
-                }`}
-              >
-                {v.option1 && v.title.includes(" / ")
+            {product.variants.map((v) => {
+              const label =
+                v.option1 && v.title.includes(" / ")
                   ? v.option1
                   : v.title === "Default Title"
                     ? "One size"
-                    : v.option1 ?? v.title}
-              </button>
-            ))}
+                    : (v.option1 ?? v.title);
+              const selected = variantId === v.id;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setVariantId(v.id)}
+                  aria-pressed={selected}
+                  disabled={!v.available}
+                  className={`rounded-sm border px-4 py-2.5 text-sm transition-colors ${
+                    selected
+                      ? "border-foreground bg-white shadow-sm"
+                      : "border-foreground/20 bg-white/60 hover:border-foreground/50 disabled:opacity-40"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </fieldset>
       )}
-      <div className="flex items-stretch gap-3">
-        <div className="inline-flex items-center overflow-hidden rounded-md border">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <div className="inline-flex h-12 shrink-0 items-center overflow-hidden rounded-sm border border-foreground/20 bg-white">
           <button
             type="button"
             onClick={() => setQty((q) => Math.max(1, q - 1))}
-            className="grid h-12 w-11 place-items-center hover:bg-foreground/5"
+            className="grid h-full w-11 place-items-center hover:bg-foreground/5"
             aria-label="Decrease quantity"
           >
             <Minus className="size-4" />
           </button>
-          <span className="w-9 text-center tabular-nums">{qty}</span>
+          <span className="w-10 text-center tabular-nums">{qty}</span>
           <button
             type="button"
             onClick={() => setQty((q) => q + 1)}
-            className="grid h-12 w-11 place-items-center hover:bg-foreground/5"
+            className="grid h-full w-11 place-items-center hover:bg-foreground/5"
             aria-label="Increase quantity"
           >
             <Plus className="size-4" />
@@ -124,14 +131,14 @@ export function AddToCart({ product }: { product: StoreProduct }) {
             setAdded(true);
             setTimeout(() => setAdded(false), 1400);
           }}
-          className="h-12 flex-1 rounded-md bg-pine text-sm font-semibold text-bone hover:brightness-105 disabled:opacity-50"
+          className="h-12 min-h-12 flex-1 rounded-sm bg-[#c9b896] px-6 text-sm font-semibold tracking-wide text-foreground uppercase hover:brightness-95 disabled:opacity-50 sm:min-w-[200px]"
         >
           {!variant?.available
             ? "Out of stock"
             : added
               ? (
-                  <span className="inline-flex items-center justify-center gap-2">
-                    <Check className="size-4" /> Added
+                  <span className="inline-flex items-center justify-center gap-2 normal-case">
+                    <Check className="size-4" /> Added to bag
                   </span>
                 )
               : "Add to bag"}
