@@ -26,6 +26,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "greenlanefurniture.co.uk",
       },
+      {
+        protocol: "https",
+        hostname: "shop.greenlanefurniture.co.uk",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
       ...(wpHostname
         ? [{ protocol: "https" as const, hostname: wpHostname }]
         : []),

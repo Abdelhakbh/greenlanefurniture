@@ -21,7 +21,7 @@ export async function SiteShell({ children }: { children: React.ReactNode }) {
       </div>
       <Navbar categories={categories} />
       <main id="main">{children}</main>
-      <Footer />
+      <Footer collections={categories} />
       <CartSheet />
     </CartProvider>
   );

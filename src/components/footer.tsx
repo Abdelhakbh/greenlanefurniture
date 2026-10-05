@@ -1,15 +1,21 @@
 import Link from "next/link";
+import type { StoreCollection } from "@/lib/types";
+import { policyLinks as legalLinks } from "@/lib/policies";
 import { site } from "@/lib/site";
 
-export function Footer() {
+type FooterProps = {
+  collections?: StoreCollection[];
+};
+
+export function Footer({ collections = [] }: FooterProps) {
+  const cols = collections.filter((c) => c.products_count > 0).slice(0, 8);
+
   return (
     <footer className="mt-10 bg-pine-deep text-bone">
-      <div className="mx-auto grid max-w-[1240px] gap-10 px-[clamp(1rem,4vw,3rem)] py-[clamp(2.5rem,5vw,3.75rem)] sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-[1240px] gap-10 px-[clamp(1rem,4vw,3rem)] py-[clamp(2.5rem,5vw,3.75rem)] sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
         <div>
           <p className="font-display text-xl font-medium">Green Lane Furniture</p>
-          <p className="mt-4 max-w-[36ch] text-sm opacity-80">
-            {site.subhead}
-          </p>
+          <p className="mt-4 max-w-[36ch] text-sm opacity-80">{site.subhead}</p>
           <address className="not-italic mt-5 text-sm leading-relaxed opacity-80">
             <strong className="font-medium opacity-100">{site.legalName}</strong>
             <br />
@@ -47,6 +53,15 @@ export function Footer() {
           <Link href="/sale" className="block py-1 opacity-85 hover:text-amber">
             Sale
           </Link>
+          {cols.map((c) => (
+            <Link
+              key={c.handle}
+              href={`/category/${c.handle}`}
+              className="block py-1 opacity-85 hover:text-amber"
+            >
+              {c.title}
+            </Link>
+          ))}
         </nav>
         <nav aria-label="Customer service">
           <h4 className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] opacity-60">
@@ -64,6 +79,29 @@ export function Footer() {
           <Link href="/contact" className="block py-1 opacity-85 hover:text-amber">
             Contact
           </Link>
+          <Link href="/warranty" className="block py-1 opacity-85 hover:text-amber">
+            Warranty
+          </Link>
+          <Link
+            href="/complaints"
+            className="block py-1 opacity-85 hover:text-amber"
+          >
+            Complaints
+          </Link>
+        </nav>
+        <nav aria-label="Legal">
+          <h4 className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] opacity-60">
+            Legal
+          </h4>
+          {legalLinks.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="block py-1 opacity-85 hover:text-amber"
+            >
+              {l.label}
+            </Link>
+          ))}
         </nav>
         <div>
           <h4 className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] opacity-60">
@@ -85,7 +123,11 @@ export function Footer() {
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-[1240px] flex-col gap-3 px-[clamp(1rem,4vw,3rem)] py-5 text-xs opacity-70 md:flex-row md:items-center md:justify-between">
           <p>
-            © {new Date().getFullYear()} {site.name} · All prices incl. VAT
+            © {new Date().getFullYear()} {site.name} · {site.legalName} · All
+            prices incl. VAT
+          </p>
+          <p className="max-w-xl md:text-right">
+            Registered in England & Wales · Company {site.companyNumber}
           </p>
         </div>
       </div>

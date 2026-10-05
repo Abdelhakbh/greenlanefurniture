@@ -201,19 +201,23 @@ export function toProductCard(p: StoreProduct): ProductCard {
 }
 
 export async function getAllProducts(): Promise<StoreProduct[]> {
-  const all: WooProduct[] = [];
-  let page = 1;
-  while (page < 30) {
-    const batch = await wooFetch<WooProduct[]>(
-      `/products?status=publish&per_page=100&page=${page}`,
-    );
-    if (!batch.length) break;
-    all.push(...batch);
-    if (batch.length < 100) break;
-    page++;
+  try {
+    const all: WooProduct[] = [];
+    let page = 1;
+    while (page < 30) {
+      const batch = await wooFetch<WooProduct[]>(
+        `/products?status=publish&per_page=100&page=${page}`,
+      );
+      if (!batch.length) break;
+      all.push(...batch);
+      if (batch.length < 100) break;
+      page++;
+    }
+    const mapped = await Promise.all(all.map((p) => mapWooProduct(p, false)));
+    return mapped.filter((p) => p.title && p.handle);
+  } catch {
+    return [];
   }
-  const mapped = await Promise.all(all.map((p) => mapWooProduct(p, false)));
-  return mapped.filter((p) => p.title && p.handle);
 }
 
 export async function getProduct(handle: string) {
@@ -226,6 +230,14 @@ export async function getProduct(handle: string) {
 }
 
 export async function getCollections(): Promise<StoreCollection[]> {
+  try {
+    return await fetchCollections();
+  } catch {
+    return [];
+  }
+}
+
+async function fetchCollections(): Promise<StoreCollection[]> {
   const cats = await wooFetch<
     {
       id: number;
@@ -247,6 +259,7 @@ export async function getCollections(): Promise<StoreCollection[]> {
       products_count: c.count,
     }));
 }
+
 
 export async function getCollectionProducts(handle: string) {
   const cats = await wooFetch<{ id: number; slug: string }[]>(
