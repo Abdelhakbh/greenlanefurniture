@@ -4,6 +4,7 @@ import { FaqList } from "@/components/faq-list";
 import { ProductCard } from "@/components/product-card";
 import {
   collectionsWithCovers,
+  pickFeaturedCollections,
   pickHeroImage,
   supportTeamImage,
 } from "@/lib/collection-covers";
@@ -26,9 +27,10 @@ export default async function HomePage() {
     const full = products.find((x) => x.handle === p.handle)!;
     return toProductCard(full);
   });
-  const roomCollections = collectionsWithCovers(collections, products).slice(
-    0,
-    8,
+  const featuredCollections = pickFeaturedCollections(collections, 4);
+  const roomCollections = collectionsWithCovers(
+    featuredCollections,
+    products,
   );
   const heroSrc = pickHeroImage(products);
 
@@ -137,15 +139,17 @@ export default async function HomePage() {
       </section>
 
       <section className="bg-lane-tint">
-        <div className="mx-auto grid max-w-[1240px] items-center gap-10 px-[clamp(1rem,4vw,3rem)] py-[clamp(2.5rem,5vw,4rem)] lg:grid-cols-2">
-          <div className="relative order-2 aspect-[4/5] overflow-hidden rounded-2xl shadow-md lg:order-1">
-            <Image
-              src={supportTeamImage}
-              alt="Green Lane Furniture customer support team member"
-              fill
-              className="object-cover object-top"
-              sizes="(min-width: 1024px) 40vw, 100vw"
-            />
+        <div className="mx-auto grid max-w-[1240px] items-center gap-8 px-[clamp(1rem,4vw,3rem)] py-[clamp(2.5rem,5vw,4rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
+          <div className="relative order-2 mx-auto w-full max-w-[280px] overflow-hidden rounded-2xl shadow-md sm:max-w-[320px] lg:order-1 lg:max-w-none">
+            <div className="relative aspect-[3/4]">
+              <Image
+                src={supportTeamImage}
+                alt="Green Lane Furniture customer support team member"
+                fill
+                className="object-cover object-top"
+                sizes="(min-width: 1024px) 280px, 70vw"
+              />
+            </div>
           </div>
           <div className="order-1 lg:order-2">
             <h2 className="font-display text-[clamp(1.6rem,3vw,2.25rem)] font-medium">

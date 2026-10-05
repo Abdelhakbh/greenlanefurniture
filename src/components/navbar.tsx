@@ -5,13 +5,14 @@ import Link from "next/link";
 import { Menu, ShoppingBag } from "lucide-react";
 import { useCart } from "./cart-context";
 import type { StoreCollection } from "@/lib/catalog";
+import { isVisibleCollection } from "@/lib/collection-covers";
 
 const LOGO =
   "https://greenlanefurniture.co.uk/cdn/shop/files/green-lane-furniture-logo-v2.png?v=1789751439&width=440";
 
 export function Navbar({ categories }: { categories: StoreCollection[] }) {
   const { count, setOpen } = useCart();
-  const navCats = categories.slice(0, 5);
+  const navCats = categories.filter(isVisibleCollection).slice(0, 5);
 
   return (
     <header className="sticky top-0 z-40 border-b border-foreground/10 bg-background/90 backdrop-blur-md">

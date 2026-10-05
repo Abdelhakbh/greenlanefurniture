@@ -1,5 +1,45 @@
 import type { StoreCollection, StoreProduct } from "./types";
 
+/** Homepage + footer: hide generic catch-all categories. */
+const HIDDEN_COLLECTION = /^furniture$/i;
+
+/** Prefer these four for “Shop by room” (slug or title match). */
+const FEATURED_COLLECTION_ORDER = [
+  /sofa/i,
+  /bed/i,
+  /pouffe|ottoman/i,
+  /sideboard|storage|tv/i,
+];
+
+export function isVisibleCollection(c: StoreCollection) {
+  return (
+    c.products_count > 0 &&
+    !HIDDEN_COLLECTION.test(c.title.trim()) &&
+    !HIDDEN_COLLECTION.test(c.handle.replace(/-/g, " "))
+  );
+}
+
+export function pickFeaturedCollections(
+  collections: StoreCollection[],
+  limit = 4,
+): StoreCollection[] {
+  const visible = collections.filter(isVisibleCollection);
+  const picked: StoreCollection[] = [];
+  for (const pattern of FEATURED_COLLECTION_ORDER) {
+    const match = visible.find(
+      (c) =>
+        !picked.includes(c) &&
+        (pattern.test(c.title) || pattern.test(c.handle.replace(/-/g, " "))),
+    );
+    if (match) picked.push(match);
+  }
+  for (const c of visible.sort((a, b) => b.products_count - a.products_count)) {
+    if (picked.length >= limit) break;
+    if (!picked.includes(c)) picked.push(c);
+  }
+  return picked.slice(0, limit);
+}
+
 const roomStock: { match: RegExp; src: string }[] = [
   {
     match: /sofa|loveseat|corner|chaise/i,

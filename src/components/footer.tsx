@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { StoreCollection } from "@/lib/types";
+import { pickFeaturedCollections } from "@/lib/collection-covers";
 import { policyLinks as legalLinks } from "@/lib/policies";
 import { site } from "@/lib/site";
 
@@ -8,7 +9,7 @@ type FooterProps = {
 };
 
 export function Footer({ collections = [] }: FooterProps) {
-  const cols = collections.filter((c) => c.products_count > 0).slice(0, 8);
+  const cols = pickFeaturedCollections(collections, 4);
 
   return (
     <footer className="mt-10 bg-pine-deep text-bone">
