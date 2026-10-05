@@ -139,19 +139,17 @@ export default async function HomePage() {
       </section>
 
       <section className="bg-lane-tint">
-        <div className="mx-auto grid max-w-[1240px] items-center gap-8 px-[clamp(1rem,4vw,3rem)] py-[clamp(2.5rem,5vw,4rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
-          <div className="relative order-2 mx-auto w-full max-w-[280px] overflow-hidden rounded-2xl shadow-md sm:max-w-[320px] lg:order-1 lg:max-w-none">
-            <div className="relative aspect-[3/4]">
-              <Image
-                src={supportTeamImage}
-                alt="Green Lane Furniture customer support team member"
-                fill
-                className="object-cover object-top"
-                sizes="(min-width: 1024px) 280px, 70vw"
-              />
-            </div>
+        <div className="mx-auto grid max-w-[1240px] items-stretch gap-[clamp(1.5rem,4vw,3rem)] px-[clamp(1rem,4vw,3rem)] py-[clamp(2.5rem,5vw,4rem)] lg:grid-cols-2">
+          <div className="relative order-2 min-h-[min(420px,70vw)] overflow-hidden rounded-2xl shadow-md lg:order-1 lg:min-h-[440px]">
+            <Image
+              src={supportTeamImage}
+              alt="Green Lane Furniture customer support team member"
+              fill
+              className="object-cover object-[center_22%]"
+              sizes="(min-width: 1024px) 620px, 100vw"
+            />
           </div>
-          <div className="order-1 lg:order-2">
+          <div className="order-1 flex min-h-[min(420px,auto)] flex-col justify-center lg:order-2 lg:min-h-[440px] lg:py-4">
             <h2 className="font-display text-[clamp(1.6rem,3vw,2.25rem)] font-medium">
               A Birmingham furniture showroom
             </h2>
