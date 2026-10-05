@@ -8,8 +8,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { storeCheckoutUrl } from "@/lib/catalog";
-
 export type CartLine = {
   productId: number;
   variantId: number;
@@ -28,6 +26,7 @@ type CartContextValue = {
   add: (line: Omit<CartLine, "qty">, qty?: number) => void;
   setQty: (variantId: number, qty: number) => void;
   remove: (variantId: number) => void;
+  clearCart: () => void;
   checkoutUrl: string;
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -85,22 +84,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setLines((prev) => prev.filter((l) => l.variantId !== variantId));
   }, []);
 
+  const clearCart = useCallback(() => {
+    setLines([]);
+  }, []);
+
   const count = useMemo(
     () => lines.reduce((n, l) => n + l.qty, 0),
     [lines],
   );
 
   const checkoutUrl = useMemo(
-    () =>
-      storeCheckoutUrl(
-        lines.map((l) => ({
-          productId: l.productId,
-          variantId: l.variantId,
-          qty: l.qty,
-          attributes: l.attributes,
-        })),
-      ),
-    [lines],
+    () => (lines.length ? "/checkout" : "/shop"),
+    [lines.length],
   );
 
   const value = useMemo(
@@ -110,11 +105,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       add,
       setQty,
       remove,
+      clearCart,
       checkoutUrl,
       open,
       setOpen,
     }),
-    [lines, count, add, setQty, remove, checkoutUrl, open],
+    [lines, count, add, setQty, remove, clearCart, checkoutUrl, open],
   );
 
   return (
