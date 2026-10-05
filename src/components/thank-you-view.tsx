@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCart } from "@/components/cart-context";
-import { PENDING_ORDER_KEY, type PendingOrder } from "@/lib/checkout-config";
+import {
+  checkoutConfig,
+  PENDING_ORDER_KEY,
+  type PendingOrder,
+} from "@/lib/checkout-config";
 import { formatPrice } from "@/lib/format";
 import { site } from "@/lib/site";
 
@@ -13,11 +17,11 @@ export function ThankYouView() {
   const { clearCart } = useCart();
   const [order, setOrder] = useState<PendingOrder | null>(null);
 
-  const stripePending = params.get("stripe_pending") === "1";
   const ref = params.get("ref") ?? order?.ref ?? "—";
   const wooNumber = params.get("woo") ?? order?.wooOrderNumber ?? null;
   const totalParam = parseFloat(params.get("total") ?? "0");
   const total = order?.total ?? totalParam;
+  const discountAmount = order?.discountAmount ?? 0;
 
   useEffect(() => {
     try {
@@ -35,17 +39,8 @@ export function ThankYouView() {
         Order received
       </p>
       <h1 className="mt-2 font-display text-[clamp(1.8rem,4vw,2.4rem)] font-medium">
-        {stripePending ? "Thank you — payment pending" : "Thank you"}
+        Thank you — bank transfer details
       </h1>
-
-      {stripePending && (
-        <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          Card processing is temporarily unavailable. Your order{" "}
-          {wooNumber ? `#${wooNumber} ` : ""}
-          is saved. We&apos;ll email you at the address you provided when you
-          can complete payment securely with Stripe.
-        </p>
-      )}
 
       <p className="mt-3 text-foreground/70">
         {wooNumber ? (
@@ -58,13 +53,55 @@ export function ThankYouView() {
             Reference <strong className="text-foreground">{ref}</strong>
           </>
         )}
-        {!stripePending && (
-          <>
-            {" "}
-            · Total <strong className="tabular-nums">{formatPrice(total)}</strong>
-          </>
-        )}
+        . Your {checkoutConfig.bankTransferDiscountPercent}% bank-transfer discount
+        is included in the amount below.
       </p>
+
+      <div className="mt-8 rounded-sm border-2 border-pine/30 bg-lane-tint/50 p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pine">
+          Bank transfer
+        </p>
+        {discountAmount > 0 && (
+          <p className="mt-2 text-sm text-lane-green">
+            Discount applied: −{formatPrice(discountAmount)}
+          </p>
+        )}
+        <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
+          {formatPrice(total)}
+        </p>
+        <p className="mt-1 text-sm text-foreground/60">
+          Send exactly this amount (in GBP).
+        </p>
+
+        <dl className="mt-6 space-y-3 text-sm">
+          <div>
+            <dt className="text-foreground/55">Account name</dt>
+            <dd className="font-medium">{checkoutConfig.bankAccountName}</dd>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <dt className="text-foreground/55">Sort code</dt>
+              <dd className="font-medium tabular-nums">
+                {checkoutConfig.bankSortCode}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-foreground/55">Account number</dt>
+              <dd className="font-medium tabular-nums">
+                {checkoutConfig.bankAccountNumber}
+              </dd>
+            </div>
+          </div>
+          <div>
+            <dt className="text-foreground/55">Reference (required)</dt>
+            <dd className="font-medium">{ref}</dd>
+          </div>
+          <div>
+            <dt className="text-foreground/55">Amount</dt>
+            <dd className="font-semibold tabular-nums">{formatPrice(total)}</dd>
+          </div>
+        </dl>
+      </div>
 
       <p className="mt-6 text-sm leading-relaxed text-foreground/65">
         Questions? Email{" "}

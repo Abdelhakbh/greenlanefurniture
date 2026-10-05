@@ -11,6 +11,9 @@ type OrderBody = {
   shipping: number;
   lines: CreateWooOrderLine[];
   billing: Record<string, string>;
+  discountAmount?: number;
+  discountPercent?: number;
+  amountDue?: number;
 };
 
 function bad(message: string, status = 400) {
@@ -26,7 +29,7 @@ export async function POST(req: Request) {
   }
 
   if (!body.ref?.trim()) return bad("Missing order reference.");
-  if (body.method !== "card") {
+  if (body.method !== "bank") {
     return bad("Invalid payment method.");
   }
   if (!Array.isArray(body.lines) || !body.lines.length) {
@@ -89,6 +92,9 @@ export async function POST(req: Request) {
       },
       shipping,
       customerNote: b.notes?.trim(),
+      discountAmount: body.discountAmount,
+      discountPercent: body.discountPercent,
+      amountDue: body.amountDue,
     });
 
     return NextResponse.json(result);

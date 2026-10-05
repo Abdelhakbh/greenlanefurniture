@@ -3,34 +3,25 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useCart } from "@/components/cart-context";
+import { StripePaymentSection } from "@/components/stripe-card-panel";
 import {
-  StripePaymentSection,
-  type StripeCardPanelHandle,
-} from "@/components/stripe-card-panel";
-import {
+  CARD_UNAVAILABLE_MESSAGE,
   checkoutConfig,
+  computeBankTransferTotals,
   generateOrderRef,
   PENDING_ORDER_KEY,
   type PendingOrder,
 } from "@/lib/checkout-config";
 import { formatPrice } from "@/lib/format";
 import { site } from "@/lib/site";
-import {
-  buildStripePaymentUrl,
-  getStripePaymentLink,
-  isStripeCardPaused,
-  isStripePaymentLinkConfigured,
-} from "@/lib/stripe";
 
 export function CheckoutView() {
   const router = useRouter();
   const { lines } = useCart();
-  const stripeCardRef = useRef<StripeCardPanelHandle>(null);
-  const stripePaused = isStripeCardPaused();
   const [shipDifferent, setShipDifferent] = useState(false);
-  const [cardError, setCardError] = useState("");
+  const [cardNotice, setCardNotice] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -39,9 +30,10 @@ export function CheckoutView() {
     [lines],
   );
   const shipping = checkoutConfig.shippingAmount;
-  const total = subtotal + shipping;
-
-  const paymentLinkReady = isStripePaymentLinkConfigured(getStripePaymentLink());
+  const { discountAmount, total } = useMemo(
+    () => computeBankTransferTotals(subtotal, shipping),
+    [subtotal, shipping],
+  );
 
   if (!lines.length) {
     return (
@@ -69,20 +61,15 @@ export function CheckoutView() {
     return ok;
   }
 
+  function onCardAttempt() {
+    setCardNotice(CARD_UNAVAILABLE_MESSAGE);
+  }
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setCardError("");
     setSubmitError("");
     const form = e.currentTarget;
     if (!validate(form)) return;
-
-    const cardCheck = await stripeCardRef.current?.validate();
-    if (!cardCheck?.ok) {
-      setCardError(
-        cardCheck?.error ?? "Please check your card details and try again.",
-      );
-      return;
-    }
 
     setSubmitting(true);
     const billing = Object.fromEntries(new FormData(form).entries()) as Record<
@@ -90,7 +77,7 @@ export function CheckoutView() {
       string
     >;
     const ref = generateOrderRef();
-    const method = "card" as const;
+    const method = "bank" as const;
 
     let wooOrderId: number | undefined;
     let wooOrderNumber: string | undefined;
@@ -102,6 +89,9 @@ export function CheckoutView() {
           ref,
           method,
           shipping,
+          discountAmount,
+          discountPercent: checkoutConfig.bankTransferDiscountPercent,
+          amountDue: total,
           lines: lines.map((l) => ({
             productId: l.productId,
             variantId: l.variantId,
@@ -139,6 +129,8 @@ export function CheckoutView() {
       total,
       subtotal,
       shipping,
+      discountAmount,
+      discountPercent: checkoutConfig.bankTransferDiscountPercent,
       wooOrderId,
       wooOrderNumber,
       lines: lines.map((l) => ({
@@ -165,17 +157,6 @@ export function CheckoutView() {
       total: total.toFixed(2),
     });
     if (wooOrderNumber) q.set("woo", wooOrderNumber);
-
-    const paymentLink = getStripePaymentLink();
-    if (paymentLinkReady && !stripePaused) {
-      window.location.href = buildStripePaymentUrl(paymentLink, {
-        ref,
-        email: billing.email,
-      });
-      return;
-    }
-
-    if (stripePaused) q.set("stripe_pending", "1");
     router.push(`/checkout/thank-you?${q.toString()}`);
   }
 
@@ -254,18 +235,47 @@ export function CheckoutView() {
 
           <section>
             <h2 className="mb-4 font-display text-xl font-medium">Payment</h2>
-            <StripePaymentSection panelRef={stripeCardRef} />
-            {stripePaused && (
-              <p className="mt-3 text-sm text-[#697386]">
-                Card capture is briefly unavailable. You can still place your
-                order — we&apos;ll confirm by email when payment can be completed.
+
+            <div className="mb-4 rounded-lg border border-[#c4e8d4] bg-[#edf8f0] px-4 py-3.5 text-sm leading-relaxed text-[#1e4620]">
+              <p className="font-medium">
+                For a short time we&apos;re accepting{" "}
+                <strong>bank transfer only</strong>.
               </p>
-            )}
-            {cardError && (
-              <p className="mt-3 rounded-md border border-[#df1b41]/30 bg-[#fef2f4] px-3 py-2 text-sm text-[#df1b41]">
-                {cardError}
+              <p className="mt-1.5 text-[#2d5a34]">
+                Our card payment partner is temporarily unavailable. To say thank
+                you for your patience, you&apos;ll receive{" "}
+                <strong>{checkoutConfig.bankTransferDiscountPercent}% off</strong>{" "}
+                when you pay by bank transfer — the discount is applied below.
               </p>
-            )}
+            </div>
+
+            <div className="mb-4 overflow-hidden rounded-lg border-2 border-[#0570de] bg-white shadow-sm">
+              <div className="flex items-center gap-3 border-b border-[#e6e6e6] bg-[#f6f9fc] px-4 py-3.5">
+                <span
+                  className="size-[18px] shrink-0 rounded-full border-[5px] border-[#0570de] bg-white"
+                  aria-hidden
+                />
+                <span className="text-sm font-medium">Bank transfer</span>
+                <span className="rounded-full bg-[#0570de] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                  {checkoutConfig.bankTransferDiscountPercent}% off
+                </span>
+              </div>
+              <p className="px-4 py-3 text-sm text-[#30313d]">
+                Place your order here — bank details and your discounted total
+                appear on the next page. Use reference{" "}
+                <span className="text-foreground/55">(shown after checkout)</span>{" "}
+                when you pay.
+              </p>
+            </div>
+
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#697386]">
+              Card (temporarily unavailable)
+            </p>
+            <StripePaymentSection
+              onCardAttempt={onCardAttempt}
+              cardNotice={cardNotice}
+            />
+
             {submitError && (
               <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
                 {submitError}
@@ -308,8 +318,14 @@ export function CheckoutView() {
                 {shipping === 0 ? "Free" : formatPrice(shipping)}
               </span>
             </div>
+            <div className="flex justify-between text-lane-green">
+              <span>
+                Bank transfer discount ({checkoutConfig.bankTransferDiscountPercent}%)
+              </span>
+              <span className="tabular-nums">−{formatPrice(discountAmount)}</span>
+            </div>
             <div className="flex justify-between border-t border-foreground/10 pt-3 text-base font-semibold">
-              <span>Total</span>
+              <span>Total to pay</span>
               <span className="tabular-nums">{formatPrice(total)}</span>
             </div>
           </div>
@@ -332,17 +348,10 @@ export function CheckoutView() {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-4 w-full rounded-md bg-[#0074e0] py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0063c7] disabled:opacity-60"
+            className="mt-4 w-full rounded-md bg-pine py-3.5 text-sm font-semibold text-bone hover:brightness-95 disabled:opacity-60"
           >
-            {submitting
-              ? "Processing…"
-              : paymentLinkReady && !stripePaused
-                ? "Pay now"
-                : "Place order"}
+            {submitting ? "Processing…" : "Place order — pay by bank transfer"}
           </button>
-          <p className="mt-3 text-center text-xs text-[#697386]">
-            🔒 Payments secured by Stripe
-          </p>
         </aside>
       </form>
     </div>

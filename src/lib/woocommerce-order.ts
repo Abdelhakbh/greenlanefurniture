@@ -73,12 +73,15 @@ export type CreateWooOrderInput = {
     country: string;
   };
   customerNote?: string;
+  discountAmount?: number;
+  discountPercent?: number;
+  amountDue?: number;
 };
 
 function paymentForMethod(_method: CreateWooOrderInput["method"]) {
   return {
-    payment_method: "stripe",
-    payment_method_title: "Credit / debit card (Stripe)",
+    payment_method: "bacs",
+    payment_method_title: "Bank transfer",
   };
 }
 
@@ -142,10 +145,15 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
         ]
       : [];
 
+  const paymentNote =
+    input.amountDue != null
+      ? `Payment: Bank transfer (awaiting). Amount due after ${input.discountPercent ?? 8}% discount: £${input.amountDue.toFixed(2)}`
+      : "Payment: Bank transfer (awaiting payment)";
+
   const noteParts = [
     input.customerNote?.trim(),
     `Storefront reference: ${input.ref}`,
-    "Payment: Card (Stripe, awaiting payment)",
+    paymentNote,
   ].filter(Boolean);
 
   const payload = {
@@ -162,6 +170,17 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
       { key: "_glf_order_ref", value: input.ref },
       { key: "_glf_payment_method", value: input.method },
       { key: "_created_via", value: "greenlanefurniture-headless" },
+      ...(input.discountAmount != null
+        ? [
+            {
+              key: "_glf_bank_discount",
+              value: String(input.discountAmount),
+            },
+          ]
+        : []),
+      ...(input.amountDue != null
+        ? [{ key: "_glf_amount_due", value: String(input.amountDue) }]
+        : []),
     ],
   };
 
