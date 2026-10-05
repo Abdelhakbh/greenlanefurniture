@@ -260,7 +260,14 @@ export async function getCollectionProducts(handle: string) {
   return Promise.all(products.map((p) => mapWooProduct(p, false)));
 }
 
-export function storeCheckoutUrl(
+export function getPublicStoreBaseUrl() {
+  const raw =
+    process.env.WORDPRESS_URL ?? process.env.NEXT_PUBLIC_WORDPRESS_URL;
+  return raw?.replace(/\/$/, "") ?? "";
+}
+
+export function buildStoreCheckoutUrl(
+  base: string,
   items: {
     productId: number;
     variantId: number;
@@ -268,7 +275,6 @@ export function storeCheckoutUrl(
     attributes?: Record<string, string>;
   }[],
 ) {
-  const { base } = getConfig();
   if (!items.length) return `${base}/cart/`;
   if (items.length === 1) {
     const item = items[0];
@@ -285,6 +291,13 @@ export function storeCheckoutUrl(
     return `${base}/?${params.toString()}`;
   }
   return `${base}/cart/`;
+}
+
+export function storeCheckoutUrl(
+  items: Parameters<typeof buildStoreCheckoutUrl>[1],
+) {
+  const base = getPublicStoreBaseUrl() || getConfig().base;
+  return buildStoreCheckoutUrl(base, items);
 }
 
 export async function getRelatedProductCards(

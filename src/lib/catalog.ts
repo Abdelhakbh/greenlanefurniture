@@ -58,6 +58,10 @@ export function storeCheckoutUrl(
     attributes?: Record<string, string>;
   }[],
 ) {
+  const wooBase = woo.getPublicStoreBaseUrl();
+  if (wooBase) {
+    return woo.buildStoreCheckoutUrl(wooBase, items);
+  }
   if (useWooCommerce()) {
     return woo.storeCheckoutUrl(items);
   }
