@@ -7,14 +7,18 @@ type StripePaymentSectionProps = {
 };
 
 function CardBrandBadges({ size = "md" }: { size?: "sm" | "md" }) {
-  const h = size === "sm" ? "h-[18px]" : "h-[22px]";
+  const h = size === "sm" ? "h-[22px]" : "h-[26px]";
+  const maxW = size === "sm" ? "max-w-[132px] sm:max-w-[148px]" : "max-w-[148px] sm:max-w-[168px]";
   return (
-    <Image
-      src="/card-brands.png"
+    // SVG stays sharp at any DPI (Stripe icon strip)
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/card-brands.svg"
       alt="American Express, Discover, Visa, Mastercard"
-      width={120}
-      height={24}
-      className={`${h} w-auto max-w-[110px] object-contain object-right sm:max-w-[130px]`}
+      width={168}
+      height={26}
+      className={`${h} ${maxW} w-auto shrink-0 object-contain object-right`}
+      decoding="async"
     />
   );
 }
@@ -95,11 +99,11 @@ export function StripePaymentSection({
               readOnly
               tabIndex={0}
               placeholder="1234 1234 1234 1234"
-              className="w-full cursor-not-allowed border-0 bg-transparent pr-[118px] text-base text-[#697386] outline-none placeholder:text-[#aab7c4] sm:pr-[132px]"
+              className="w-full cursor-not-allowed border-0 bg-transparent pr-[136px] text-base text-[#697386] outline-none placeholder:text-[#aab7c4] sm:pr-[152px]"
               aria-label="Card number"
               onFocus={blockAttempt}
             />
-            <div className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 opacity-90">
+            <div className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2">
               <CardBrandBadges size="sm" />
             </div>
           </div>
