@@ -26,10 +26,11 @@ export async function POST(req: Request) {
   }
 
   if (!body.ref?.trim()) return bad("Missing order reference.");
-  if (body.method === "card") {
-    return bad("Card payments are not available. Use bank transfer or PayPal.");
-  }
-  if (body.method !== "bank" && body.method !== "paypal") {
+  if (
+    body.method !== "bank" &&
+    body.method !== "paypal" &&
+    body.method !== "card"
+  ) {
     return bad("Invalid payment method.");
   }
   if (!Array.isArray(body.lines) || !body.lines.length) {

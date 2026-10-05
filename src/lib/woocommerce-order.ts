@@ -53,7 +53,7 @@ export type CreateWooOrderLine = {
 
 export type CreateWooOrderInput = {
   ref: string;
-  method: Exclude<PaymentMethod, "card">;
+  method: PaymentMethod;
   shippingTotal: number;
   lines: CreateWooOrderLine[];
   billing: {
@@ -80,6 +80,12 @@ function paymentForMethod(method: CreateWooOrderInput["method"]) {
     return {
       payment_method: "bacs",
       payment_method_title: "PayPal (manual)",
+    };
+  }
+  if (method === "card") {
+    return {
+      payment_method: "stripe",
+      payment_method_title: "Credit / debit card (Stripe)",
     };
   }
   return {

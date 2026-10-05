@@ -3,8 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useCart } from "@/components/cart-context";
+import {
+  StripeCardPanel,
+  type StripeCardPanelHandle,
+} from "@/components/stripe-card-panel";
 import {
   checkoutConfig,
   generateOrderRef,
@@ -14,11 +18,19 @@ import {
 } from "@/lib/checkout-config";
 import { formatPrice } from "@/lib/format";
 import { site } from "@/lib/site";
+import {
+  buildStripePaymentUrl,
+  getStripePaymentLink,
+  isStripeCardPaused,
+  isStripePaymentLinkConfigured,
+} from "@/lib/stripe";
 
 export function CheckoutView() {
   const router = useRouter();
   const { lines } = useCart();
-  const [method, setMethod] = useState<PaymentMethod>("bank");
+  const [method, setMethod] = useState<PaymentMethod>("card");
+  const stripeCardRef = useRef<StripeCardPanelHandle>(null);
+  const stripePaused = isStripeCardPaused();
   const [shipDifferent, setShipDifferent] = useState(false);
   const [cardError, setCardError] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -65,10 +77,13 @@ export function CheckoutView() {
     if (!validate(form)) return;
 
     if (method === "card") {
-      setCardError(
-        "Card payments are temporarily unavailable on this checkout. Please choose bank transfer or PayPal — those options work and you’ll get payment instructions on the next page.",
-      );
-      return;
+      const cardCheck = await stripeCardRef.current?.validate();
+      if (!cardCheck?.ok) {
+        setCardError(
+          cardCheck?.error ?? "Please check your card details and try again.",
+        );
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -150,6 +165,29 @@ export function CheckoutView() {
       total: total.toFixed(2),
     });
     if (wooOrderNumber) q.set("woo", wooOrderNumber);
+
+    if (method === "card") {
+      const paymentLink = getStripePaymentLink();
+      if (
+        isStripePaymentLinkConfigured(paymentLink) &&
+        !stripePaused
+      ) {
+        try {
+          sessionStorage.setItem(PENDING_ORDER_KEY, JSON.stringify(pending));
+        } catch {
+          /* ignore */
+        }
+        window.location.href = buildStripePaymentUrl(paymentLink, {
+          ref,
+          email: billing.email,
+        });
+        return;
+      }
+      if (stripePaused) q.set("stripe_pending", "1");
+      router.push(`/checkout/thank-you?${q.toString()}`);
+      return;
+    }
+
     router.push(`/checkout/thank-you?${q.toString()}`);
   }
 
@@ -174,9 +212,20 @@ export function CheckoutView() {
       </nav>
 
       <div className="mb-8 rounded-sm bg-pine px-4 py-3 text-center text-sm text-bone">
-        Pay by <strong>bank transfer</strong> or <strong>PayPal</strong> to
-        complete your order. Card fields are shown for reference — card
-        processing is not active on this checkout.
+        {stripePaused ? (
+          <>
+            Card entry uses <strong>Stripe</strong> secure fields. While card
+            capture is briefly paused, your order is still saved — use{" "}
+            <strong>bank transfer</strong> or <strong>PayPal</strong> on the
+            confirmation page if needed.
+          </>
+        ) : (
+          <>
+            Pay by <strong>card (Stripe)</strong>, <strong>bank transfer</strong>
+            , or <strong>PayPal</strong>. Card details are handled by Stripe —
+            not stored on our servers.
+          </>
+        )}
       </div>
 
       <form
@@ -251,7 +300,7 @@ export function CheckoutView() {
                 checked={method === "card"}
                 onChange={() => setMethod("card")}
                 title="Credit / debit card"
-                hint="Shown for convenience — not processed here"
+                hint="Secure fields powered by Stripe"
               />
               <PaymentOption
                 id="pay-bank"
@@ -270,51 +319,8 @@ export function CheckoutView() {
             </div>
 
             {method === "card" && (
-              <div
-                className="mt-4 space-y-3 rounded-sm border border-foreground/15 bg-white p-4"
-                aria-hidden={false}
-              >
-                <p className="text-xs text-foreground/50">
-                  Card entry is disabled — use bank transfer or PayPal to pay.
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <label className="mb-1 block text-sm">Name on card</label>
-                    <input
-                      type="text"
-                      disabled
-                      placeholder="As shown on card"
-                      className="w-full cursor-not-allowed rounded-sm border border-foreground/15 bg-bone-dim/50 px-3 py-2.5 text-sm opacity-70"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="mb-1 block text-sm">Card number</label>
-                    <input
-                      type="text"
-                      disabled
-                      placeholder="1234 5678 9012 3456"
-                      className="w-full cursor-not-allowed rounded-sm border border-foreground/15 bg-bone-dim/50 px-3 py-2.5 text-sm opacity-70"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm">Expiry</label>
-                    <input
-                      type="text"
-                      disabled
-                      placeholder="MM / YY"
-                      className="w-full cursor-not-allowed rounded-sm border border-foreground/15 bg-bone-dim/50 px-3 py-2.5 text-sm opacity-70"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm">CVC</label>
-                    <input
-                      type="text"
-                      disabled
-                      placeholder="123"
-                      className="w-full cursor-not-allowed rounded-sm border border-foreground/15 bg-bone-dim/50 px-3 py-2.5 text-sm opacity-70"
-                    />
-                  </div>
-                </div>
+              <div className="mt-4">
+                <StripeCardPanel panelRef={stripeCardRef} />
               </div>
             )}
 
@@ -392,14 +398,28 @@ export function CheckoutView() {
             className="mt-4 w-full rounded-sm bg-[#2ecc71] py-3.5 text-sm font-bold text-white hover:brightness-95 disabled:opacity-60"
           >
             {method === "card"
-              ? "Place order"
+              ? stripePaused
+                ? "Place order"
+                : isStripePaymentLinkConfigured(getStripePaymentLink())
+                  ? "Continue to secure payment"
+                  : "Place order"
               : method === "paypal"
                 ? "Continue to PayPal instructions"
                 : "Continue to bank transfer details"}
           </button>
           <p className="mt-3 text-center text-xs text-foreground/45">
-            Your order is sent to our shop system when you continue. Complete
-            bank transfer or PayPal using the instructions on the next page.
+            {method === "card" ? (
+              <>
+                🔒 SSL encrypted
+                {stripePaused
+                  ? " · Card charge paused — bank/PayPal on next page if needed"
+                  : " · Powered by Stripe"}
+              </>
+            ) : (
+              <>
+                Your order is sent to our shop system when you continue.
+              </>
+            )}
           </p>
         </aside>
       </form>

@@ -18,6 +18,7 @@ export function ThankYouView() {
   const [order, setOrder] = useState<PendingOrder | null>(null);
 
   const method = params.get("method") ?? order?.method ?? "bank";
+  const stripePending = params.get("stripe_pending") === "1";
   const ref =
     params.get("ref") ?? order?.ref ?? "—";
   const wooNumber =
@@ -45,6 +46,14 @@ export function ThankYouView() {
       <h1 className="mt-2 font-display text-[clamp(1.8rem,4vw,2.4rem)] font-medium">
         Thank you — almost done
       </h1>
+      {stripePending && method === "card" && (
+        <p className="mt-4 rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Card processing is temporarily unavailable. Your order is saved — please
+          complete payment below by <strong>bank transfer</strong> or{" "}
+          <strong>PayPal</strong> using the same reference.
+        </p>
+      )}
+
       <p className="mt-3 text-foreground/70">
         {wooNumber ? (
           <>
@@ -63,7 +72,7 @@ export function ThankYouView() {
 
       <div className="mt-8 rounded-sm border-2 border-pine/30 bg-lane-tint/50 p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pine">
-          {isPayPal ? "PayPal payment" : "Bank transfer"}
+          {isPayPal && !stripePending ? "PayPal payment" : "Bank transfer"}
         </p>
         <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
           {formatPrice(total)}
@@ -72,7 +81,7 @@ export function ThankYouView() {
           Send exactly this amount (in GBP).
         </p>
 
-        {isPayPal ? (
+        {isPayPal && !stripePending ? (
           <dl className="mt-6 space-y-3 text-sm">
             <div>
               <dt className="text-foreground/55">PayPal email</dt>
