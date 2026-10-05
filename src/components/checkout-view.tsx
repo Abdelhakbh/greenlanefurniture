@@ -6,14 +6,13 @@ import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { useCart } from "@/components/cart-context";
 import {
-  StripeCardPanel,
+  StripePaymentSection,
   type StripeCardPanelHandle,
 } from "@/components/stripe-card-panel";
 import {
   checkoutConfig,
   generateOrderRef,
   PENDING_ORDER_KEY,
-  type PaymentMethod,
   type PendingOrder,
 } from "@/lib/checkout-config";
 import { formatPrice } from "@/lib/format";
@@ -28,7 +27,6 @@ import {
 export function CheckoutView() {
   const router = useRouter();
   const { lines } = useCart();
-  const [method, setMethod] = useState<PaymentMethod>("card");
   const stripeCardRef = useRef<StripeCardPanelHandle>(null);
   const stripePaused = isStripeCardPaused();
   const [shipDifferent, setShipDifferent] = useState(false);
@@ -42,6 +40,8 @@ export function CheckoutView() {
   );
   const shipping = checkoutConfig.shippingAmount;
   const total = subtotal + shipping;
+
+  const paymentLinkReady = isStripePaymentLinkConfigured(getStripePaymentLink());
 
   if (!lines.length) {
     return (
@@ -76,14 +76,12 @@ export function CheckoutView() {
     const form = e.currentTarget;
     if (!validate(form)) return;
 
-    if (method === "card") {
-      const cardCheck = await stripeCardRef.current?.validate();
-      if (!cardCheck?.ok) {
-        setCardError(
-          cardCheck?.error ?? "Please check your card details and try again.",
-        );
-        return;
-      }
+    const cardCheck = await stripeCardRef.current?.validate();
+    if (!cardCheck?.ok) {
+      setCardError(
+        cardCheck?.error ?? "Please check your card details and try again.",
+      );
+      return;
     }
 
     setSubmitting(true);
@@ -92,6 +90,7 @@ export function CheckoutView() {
       string
     >;
     const ref = generateOrderRef();
+    const method = "card" as const;
 
     let wooOrderId: number | undefined;
     let wooOrderNumber: string | undefined;
@@ -159,6 +158,7 @@ export function CheckoutView() {
     } catch {
       /* ignore */
     }
+
     const q = new URLSearchParams({
       method,
       ref,
@@ -166,28 +166,16 @@ export function CheckoutView() {
     });
     if (wooOrderNumber) q.set("woo", wooOrderNumber);
 
-    if (method === "card") {
-      const paymentLink = getStripePaymentLink();
-      if (
-        isStripePaymentLinkConfigured(paymentLink) &&
-        !stripePaused
-      ) {
-        try {
-          sessionStorage.setItem(PENDING_ORDER_KEY, JSON.stringify(pending));
-        } catch {
-          /* ignore */
-        }
-        window.location.href = buildStripePaymentUrl(paymentLink, {
-          ref,
-          email: billing.email,
-        });
-        return;
-      }
-      if (stripePaused) q.set("stripe_pending", "1");
-      router.push(`/checkout/thank-you?${q.toString()}`);
+    const paymentLink = getStripePaymentLink();
+    if (paymentLinkReady && !stripePaused) {
+      window.location.href = buildStripePaymentUrl(paymentLink, {
+        ref,
+        email: billing.email,
+      });
       return;
     }
 
+    if (stripePaused) q.set("stripe_pending", "1");
     router.push(`/checkout/thank-you?${q.toString()}`);
   }
 
@@ -197,34 +185,8 @@ export function CheckoutView() {
         <Link href="/" className="font-display text-xl font-medium">
           {site.name}
         </Link>
-        <span className="text-foreground/55">Secure checkout</span>
+        <span className="text-sm text-foreground/55">Secure checkout</span>
       </header>
-
-      <nav
-        aria-label="Checkout progress"
-        className="mb-6 flex flex-wrap items-center justify-center gap-2 text-sm text-foreground/55"
-      >
-        <span className="font-medium text-foreground">1. Bag</span>
-        <span>→</span>
-        <span className="font-medium text-foreground">2. Checkout</span>
-        <span>→</span>
-        <span>3. Payment</span>
-      </nav>
-
-      <div className="mb-8 rounded-sm bg-pine px-4 py-3 text-center text-sm text-bone">
-        {stripePaused ? (
-          <>
-            Card entry uses <strong>Stripe</strong> secure fields. While card
-            capture is briefly paused, your order is still saved — use{" "}
-            <strong>bank transfer</strong> on the confirmation page if needed.
-          </>
-        ) : (
-          <>
-            Pay by <strong>card (Stripe)</strong> or <strong>bank transfer</strong>
-            . Card details are handled by Stripe — not stored on our servers.
-          </>
-        )}
-      </div>
 
       <form
         onSubmit={onSubmit}
@@ -292,36 +254,20 @@ export function CheckoutView() {
 
           <section>
             <h2 className="mb-4 font-display text-xl font-medium">Payment</h2>
-            <div className="space-y-2">
-              <PaymentOption
-                id="pay-card"
-                checked={method === "card"}
-                onChange={() => setMethod("card")}
-                title="Credit / debit card"
-                hint="Secure fields powered by Stripe"
-              />
-              <PaymentOption
-                id="pay-bank"
-                checked={method === "bank"}
-                onChange={() => setMethod("bank")}
-                title="Bank transfer"
-                hint="UK bank payment — instructions on confirmation page"
-              />
-            </div>
-
-            {method === "card" && (
-              <div className="mt-4">
-                <StripeCardPanel panelRef={stripeCardRef} />
-              </div>
+            <StripePaymentSection panelRef={stripeCardRef} />
+            {stripePaused && (
+              <p className="mt-3 text-sm text-[#697386]">
+                Card capture is briefly unavailable. You can still place your
+                order — we&apos;ll confirm by email when payment can be completed.
+              </p>
             )}
-
             {cardError && (
-              <p className="mt-3 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              <p className="mt-3 rounded-md border border-[#df1b41]/30 bg-[#fef2f4] px-3 py-2 text-sm text-[#df1b41]">
                 {cardError}
               </p>
             )}
             {submitError && (
-              <p className="mt-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+              <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
                 {submitError}
               </p>
             )}
@@ -386,29 +332,16 @@ export function CheckoutView() {
           <button
             type="submit"
             disabled={submitting}
-            className="mt-4 w-full rounded-sm bg-[#2ecc71] py-3.5 text-sm font-bold text-white hover:brightness-95 disabled:opacity-60"
+            className="mt-4 w-full rounded-md bg-[#0074e0] py-3.5 text-sm font-semibold text-white shadow-sm hover:bg-[#0063c7] disabled:opacity-60"
           >
-            {method === "card"
-              ? stripePaused
-                ? "Place order"
-                : isStripePaymentLinkConfigured(getStripePaymentLink())
-                  ? "Continue to secure payment"
-                  : "Place order"
-              : "Continue to bank transfer details"}
+            {submitting
+              ? "Processing…"
+              : paymentLinkReady && !stripePaused
+                ? "Pay now"
+                : "Place order"}
           </button>
-          <p className="mt-3 text-center text-xs text-foreground/45">
-            {method === "card" ? (
-              <>
-                🔒 SSL encrypted
-                {stripePaused
-                  ? " · Card charge paused — bank transfer on next page if needed"
-                  : " · Powered by Stripe"}
-              </>
-            ) : (
-              <>
-                Your order is sent to our shop system when you continue.
-              </>
-            )}
+          <p className="mt-3 text-center text-xs text-[#697386]">
+            🔒 Payments secured by Stripe
           </p>
         </aside>
       </form>
@@ -444,41 +377,5 @@ function Field({
         }
       />
     </div>
-  );
-}
-
-function PaymentOption({
-  id,
-  checked,
-  onChange,
-  title,
-  hint,
-}: {
-  id: string;
-  checked: boolean;
-  onChange: () => void;
-  title: string;
-  hint: string;
-}) {
-  return (
-    <label
-      htmlFor={id}
-      className={`flex cursor-pointer items-start gap-3 rounded-sm border px-4 py-3 ${
-        checked ? "border-pine bg-lane-tint/40" : "border-foreground/15 bg-white"
-      }`}
-    >
-      <input
-        id={id}
-        type="radio"
-        name="payment_method"
-        checked={checked}
-        onChange={onChange}
-        className="mt-1"
-      />
-      <span>
-        <span className="block text-sm font-medium">{title}</span>
-        <span className="text-xs text-foreground/55">{hint}</span>
-      </span>
-    </label>
   );
 }

@@ -1,17 +1,8 @@
-import { site } from "./site";
-
-/** Public payment details (safe for browser). Set in Vercel env. */
 export const checkoutConfig = {
-  bankAccountName:
-    process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME ?? site.legalName,
-  bankSortCode:
-    process.env.NEXT_PUBLIC_BANK_SORT_CODE ?? "00-00-00",
-  bankAccountNumber:
-    process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER ?? "00000000",
   shippingAmount: 0,
 } as const;
 
-export type PaymentMethod = "card" | "bank";
+export type PaymentMethod = "card";
 
 export const PENDING_ORDER_KEY = "green-lane-order-pending";
 

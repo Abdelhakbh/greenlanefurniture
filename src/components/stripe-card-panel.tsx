@@ -77,7 +77,7 @@ function StripeCardFields({
   return (
     <div className="stripe-card-shell text-[#30313d]">
       <div
-        className={`overflow-hidden rounded-[5px] border bg-white shadow-[0_1px_1px_rgba(0,0,0,0.03),0_3px_6px_rgba(0,0,0,0.02)] ${ring("number")}`}
+        className={`overflow-hidden rounded-[5px] border bg-white ${ring("number")}`}
       >
         <div className="border-b border-[#e6e6e6] px-3 py-3.5">
           <CardNumberElement
@@ -136,7 +136,7 @@ function StripeCardMock({
 
   return (
     <div className="stripe-card-shell text-[#30313d]">
-      <div className="overflow-hidden rounded-[5px] border border-[#e6e6e6] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.03),0_3px_6px_rgba(0,0,0,0.02)]">
+      <div className="overflow-hidden rounded-[5px] border border-[#e6e6e6] bg-white">
         <div className="relative border-b border-[#e6e6e6] px-3 py-3">
           <input
             type="text"
@@ -229,7 +229,7 @@ function CardBrandDots() {
   );
 }
 
-export function StripeCardPanel({
+function StripeCardPanelInner({
   panelRef,
 }: {
   panelRef: React.Ref<StripeCardPanelHandle>;
@@ -249,4 +249,40 @@ export function StripeCardPanel({
       <StripeCardFields panelRef={panelRef} />
     </Elements>
   );
+}
+
+/** Stripe Payment Element–style block: selected “Card” row + secure fields. */
+export function StripePaymentSection({
+  panelRef,
+}: {
+  panelRef: React.Ref<StripeCardPanelHandle>;
+}) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-[#e6e6e6] bg-white text-[#30313d] shadow-[0_1px_1px_rgba(0,0,0,0.03),0_3px_6px_rgba(18,42,66,0.04)]">
+      <div className="flex items-center justify-between border-b border-[#e6e6e6] bg-[#f6f9fc] px-4 py-3.5">
+        <div className="flex items-center gap-3">
+          <span
+            className="size-[18px] shrink-0 rounded-full border-[5px] border-[#0570de] bg-white"
+            aria-hidden
+          />
+          <span className="text-sm font-medium tracking-[-0.01em]">Card</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <CardBrandDots />
+        </div>
+      </div>
+      <div className="bg-white p-4">
+        <StripeCardPanelInner panelRef={panelRef} />
+      </div>
+    </div>
+  );
+}
+
+/** @deprecated Use StripePaymentSection at checkout. */
+export function StripeCardPanel({
+  panelRef,
+}: {
+  panelRef: React.Ref<StripeCardPanelHandle>;
+}) {
+  return <StripePaymentSection panelRef={panelRef} />;
 }

@@ -75,16 +75,10 @@ export type CreateWooOrderInput = {
   customerNote?: string;
 };
 
-function paymentForMethod(method: CreateWooOrderInput["method"]) {
-  if (method === "card") {
-    return {
-      payment_method: "stripe",
-      payment_method_title: "Credit / debit card (Stripe)",
-    };
-  }
+function paymentForMethod(_method: CreateWooOrderInput["method"]) {
   return {
-    payment_method: "bacs",
-    payment_method_title: "Bank transfer",
+    payment_method: "stripe",
+    payment_method_title: "Credit / debit card (Stripe)",
   };
 }
 
@@ -151,11 +145,7 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
   const noteParts = [
     input.customerNote?.trim(),
     `Storefront reference: ${input.ref}`,
-    `Payment: ${
-      input.method === "card"
-        ? "Card (Stripe, awaiting payment)"
-        : "Bank transfer (awaiting payment)"
-    }`,
+    "Payment: Card (Stripe, awaiting payment)",
   ].filter(Boolean);
 
   const payload = {
