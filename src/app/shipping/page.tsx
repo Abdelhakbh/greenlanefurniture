@@ -1,7 +1,12 @@
 import { PolicyLayout } from "@/components/policy-layout";
+import { buildPageMetadata } from "@/lib/metadata";
 import { site } from "@/lib/site";
 
-export const metadata = { title: "Delivery" };
+export const metadata = buildPageMetadata({
+  title: "Delivery",
+  description: "UK delivery for sofas, beds and furniture from Green Lane.",
+  path: "/shipping",
+});
 
 const doc = {
   title: "Delivery information",

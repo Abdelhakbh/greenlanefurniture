@@ -1,7 +1,12 @@
 import { PolicyLayout } from "@/components/policy-layout";
+import { buildPageMetadata } from "@/lib/metadata";
 import { site } from "@/lib/site";
 
-export const metadata = { title: "Returns & refunds" };
+export const metadata = buildPageMetadata({
+  title: "Returns & refunds",
+  description: "How to return furniture bought from Green Lane Furniture.",
+  path: "/returns",
+});
 
 const doc = {
   title: "Returns & refunds",

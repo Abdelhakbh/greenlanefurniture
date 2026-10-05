@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/product-card";
 import { getCollectionProducts, getCollections, toProductCard } from "@/lib/catalog";
+import { buildPageMetadata } from "@/lib/metadata";
+import { site } from "@/lib/site";
 
 export const revalidate = 600;
 export const dynamicParams = true;
@@ -13,7 +15,16 @@ export async function generateMetadata({
   const { handle } = await params;
   const collections = await getCollections();
   const c = collections.find((x) => x.handle === handle);
-  return { title: c?.title ?? "Category" };
+  const title = c?.title ?? "Category";
+  return buildPageMetadata({
+    title,
+    description:
+      c?.description ||
+      `Shop ${title} at ${site.name}. Quality furniture with UK delivery.`,
+    path: `/category/${handle}`,
+    image: c?.image?.src ?? null,
+    imageAlt: title,
+  });
 }
 
 export default async function CategoryPage({

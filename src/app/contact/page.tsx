@@ -1,6 +1,11 @@
+import { buildPageMetadata } from "@/lib/metadata";
 import { site } from "@/lib/site";
 
-export const metadata = { title: "Contact" };
+export const metadata = buildPageMetadata({
+  title: "Contact",
+  description: `Contact ${site.name} — ${site.phone}, ${site.email}. Visit our Birmingham showroom at ${site.address.line}.`,
+  path: "/contact",
+});
 
 export default function ContactPage() {
   return (

@@ -1,9 +1,15 @@
 import { ProductCard } from "@/components/product-card";
 import { getAllProducts, toProductCard } from "@/lib/catalog";
+import { buildPageMetadata } from "@/lib/metadata";
+import { site } from "@/lib/site";
 
 export const revalidate = 600;
 
-export const metadata = { title: "Sale" };
+export const metadata = buildPageMetadata({
+  title: "Sale",
+  description: `Reduced prices on selected furniture at ${site.name}. Limited-time offers on sofas, beds and more.`,
+  path: "/sale",
+});
 
 export default async function SalePage() {
   const products = await getAllProducts();

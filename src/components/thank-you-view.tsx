@@ -20,6 +20,8 @@ export function ThankYouView() {
   const method = params.get("method") ?? order?.method ?? "bank";
   const ref =
     params.get("ref") ?? order?.ref ?? "—";
+  const wooNumber =
+    params.get("woo") ?? order?.wooOrderNumber ?? null;
   const totalParam = parseFloat(params.get("total") ?? "0");
   const total = order?.total ?? totalParam;
 
@@ -44,9 +46,19 @@ export function ThankYouView() {
         Thank you — almost done
       </h1>
       <p className="mt-3 text-foreground/70">
-        Reference: <strong className="text-foreground">{ref}</strong>. We’ll
-        prepare your order once payment arrives. A confirmation may be sent to
-        your email after we verify payment.
+        {wooNumber ? (
+          <>
+            Order <strong className="text-foreground">#{wooNumber}</strong> is in
+            our system. Payment reference:{" "}
+            <strong className="text-foreground">{ref}</strong>.
+          </>
+        ) : (
+          <>
+            Reference: <strong className="text-foreground">{ref}</strong>.
+          </>
+        )}{" "}
+        We’ll prepare your order once payment arrives. WooCommerce may email you
+        an order notice if mail is configured on the shop.
       </p>
 
       <div className="mt-8 rounded-sm border-2 border-pine/30 bg-lane-tint/50 p-6">

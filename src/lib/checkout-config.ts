@@ -23,7 +23,11 @@ export type PendingOrder = {
   total: number;
   subtotal: number;
   shipping: number;
+  wooOrderId?: number;
+  wooOrderNumber?: string;
   lines: {
+    productId: number;
+    variantId: number;
     title: string;
     qty: number;
     price: number;

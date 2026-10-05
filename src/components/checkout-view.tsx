@@ -21,6 +21,7 @@ export function CheckoutView() {
   const [method, setMethod] = useState<PaymentMethod>("bank");
   const [shipDifferent, setShipDifferent] = useState(false);
   const [cardError, setCardError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const subtotal = useMemo(
@@ -59,6 +60,7 @@ export function CheckoutView() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setCardError("");
+    setSubmitError("");
     const form = e.currentTarget;
     if (!validate(form)) return;
 
@@ -75,13 +77,59 @@ export function CheckoutView() {
       string
     >;
     const ref = generateOrderRef();
+
+    let wooOrderId: number | undefined;
+    let wooOrderNumber: string | undefined;
+    try {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ref,
+          method,
+          shipping,
+          lines: lines.map((l) => ({
+            productId: l.productId,
+            variantId: l.variantId,
+            qty: l.qty,
+          })),
+          billing,
+        }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        wooOrderId?: number;
+        wooOrderNumber?: string;
+      };
+      if (!res.ok) {
+        setSubmitError(
+          data.error ??
+            "We could not save your order. Please try again or call us.",
+        );
+        setSubmitting(false);
+        return;
+      }
+      wooOrderId = data.wooOrderId;
+      wooOrderNumber = data.wooOrderNumber;
+    } catch {
+      setSubmitError(
+        "Network error — your order was not saved. Check your connection and try again.",
+      );
+      setSubmitting(false);
+      return;
+    }
+
     const pending: PendingOrder = {
       ref,
       method,
       total,
       subtotal,
       shipping,
+      wooOrderId,
+      wooOrderNumber,
       lines: lines.map((l) => ({
+        productId: l.productId,
+        variantId: l.variantId,
         title: l.title,
         qty: l.qty,
         price: l.price,
@@ -96,9 +144,13 @@ export function CheckoutView() {
     } catch {
       /* ignore */
     }
-    router.push(
-      `/checkout/thank-you?method=${method}&ref=${encodeURIComponent(ref)}&total=${total.toFixed(2)}`,
-    );
+    const q = new URLSearchParams({
+      method,
+      ref,
+      total: total.toFixed(2),
+    });
+    if (wooOrderNumber) q.set("woo", wooOrderNumber);
+    router.push(`/checkout/thank-you?${q.toString()}`);
   }
 
   return (
@@ -271,6 +323,11 @@ export function CheckoutView() {
                 {cardError}
               </p>
             )}
+            {submitError && (
+              <p className="mt-3 rounded-sm border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+                {submitError}
+              </p>
+            )}
           </section>
         </div>
 
@@ -341,8 +398,8 @@ export function CheckoutView() {
                 : "Continue to bank transfer details"}
           </button>
           <p className="mt-3 text-center text-xs text-foreground/45">
-            🔒 Your details are stored only in this browser until you complete
-            payment.
+            Your order is sent to our shop system when you continue. Complete
+            bank transfer or PayPal using the instructions on the next page.
           </p>
         </aside>
       </form>

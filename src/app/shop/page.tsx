@@ -1,11 +1,15 @@
 import { ProductCard } from "@/components/product-card";
 import { getAllProducts, toProductCard } from "@/lib/catalog";
+import { buildPageMetadata } from "@/lib/metadata";
+import { site } from "@/lib/site";
 
 export const revalidate = 600;
 
-export const metadata = {
+export const metadata = buildPageMetadata({
   title: "Shop",
-};
+  description: `Browse sofas, beds, storage and home furniture from ${site.name}. Free UK delivery on qualifying orders.`,
+  path: "/shop",
+});
 
 export default async function ShopPage({
   searchParams,
