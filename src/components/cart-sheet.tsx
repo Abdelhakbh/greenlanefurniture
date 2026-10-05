@@ -120,7 +120,7 @@ export function CartSheet() {
             Go to checkout
           </a>
           <p className="mt-2 text-center text-xs text-foreground/55">
-            Secure payment on our WooCommerce store
+            Opens your WooCommerce cart on greenlanefurniture.co.uk
           </p>
         </div>
       </aside>

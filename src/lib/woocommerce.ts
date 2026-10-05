@@ -288,7 +288,7 @@ export function buildStoreCheckoutUrl(
     for (const [name, value] of Object.entries(item.attributes ?? {})) {
       if (value) params.set(wooAttributeParam(name), value);
     }
-    return `${base}/?${params.toString()}`;
+    return `${base}/cart/?${params.toString()}`;
   }
   return `${base}/cart/`;
 }
