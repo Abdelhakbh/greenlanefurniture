@@ -6,13 +6,16 @@ type StripePaymentSectionProps = {
   cardNotice?: string;
 };
 
-function CardBrandDots() {
+function CardBrandBadges({ size = "md" }: { size?: "sm" | "md" }) {
+  const h = size === "sm" ? "h-[18px]" : "h-[22px]";
   return (
-    <>
-      <span className="h-[14px] w-[22px] rounded-[2px] bg-[#1a1f71]" title="Visa" />
-      <span className="h-[14px] w-[22px] rounded-[2px] bg-[#eb001b]" title="Mastercard" />
-      <span className="h-[14px] w-[22px] rounded-[2px] bg-[#006fcf]" title="Amex" />
-    </>
+    <Image
+      src="/card-brands.png"
+      alt="American Express, Discover, Visa, Mastercard"
+      width={120}
+      height={24}
+      className={`${h} w-auto max-w-[110px] object-contain object-right sm:max-w-[130px]`}
+    />
   );
 }
 
@@ -75,9 +78,7 @@ export function StripePaymentSection({
             Unavailable
           </span>
         </div>
-        <div className="flex items-center gap-1.5 opacity-50">
-          <CardBrandDots />
-        </div>
+        <CardBrandBadges />
       </div>
 
       <div className="pointer-events-auto bg-white p-4">
@@ -94,12 +95,12 @@ export function StripePaymentSection({
               readOnly
               tabIndex={0}
               placeholder="1234 1234 1234 1234"
-              className="w-full cursor-not-allowed border-0 bg-transparent text-base text-[#697386] outline-none placeholder:text-[#aab7c4]"
+              className="w-full cursor-not-allowed border-0 bg-transparent pr-[118px] text-base text-[#697386] outline-none placeholder:text-[#aab7c4] sm:pr-[132px]"
               aria-label="Card number"
               onFocus={blockAttempt}
             />
-            <div className="pointer-events-none absolute top-1/2 right-3 flex -translate-y-1/2 gap-1 opacity-40">
-              <CardBrandDots />
+            <div className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 opacity-90">
+              <CardBrandBadges size="sm" />
             </div>
           </div>
           <div className="grid grid-cols-2">
