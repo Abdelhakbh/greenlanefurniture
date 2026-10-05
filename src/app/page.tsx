@@ -140,7 +140,7 @@ export default async function HomePage() {
 
       <section className="bg-lane-tint">
         <div className="mx-auto grid max-w-[1240px] items-stretch gap-[clamp(1.5rem,4vw,3rem)] px-[clamp(1rem,4vw,3rem)] py-[clamp(2.5rem,5vw,4rem)] lg:grid-cols-2">
-          <div className="relative order-2 min-h-[min(420px,70vw)] overflow-hidden rounded-2xl shadow-md lg:order-1 lg:min-h-[440px]">
+          <div className="relative order-2 aspect-[3/4] w-full min-h-[520px] overflow-hidden rounded-2xl shadow-md sm:min-h-0 lg:order-1 lg:aspect-[4/5]">
             <Image
               src={supportTeamImage}
               alt="Green Lane Furniture customer support team member"
@@ -149,7 +149,7 @@ export default async function HomePage() {
               sizes="(min-width: 1024px) 620px, 100vw"
             />
           </div>
-          <div className="order-1 flex min-h-[min(420px,auto)] flex-col justify-center lg:order-2 lg:min-h-[440px] lg:py-4">
+          <div className="order-1 flex flex-col justify-center lg:order-2 lg:py-6">
             <h2 className="font-display text-[clamp(1.6rem,3vw,2.25rem)] font-medium">
               A Birmingham furniture showroom
             </h2>
