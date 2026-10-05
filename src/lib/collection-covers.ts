@@ -105,4 +105,4 @@ export function pickHeroImage(products: StoreProduct[]): string {
   return "https://images.unsplash.com/photo-1618221195710-dd6b41fa6046?auto=format&fit=crop&w=1400&q=85";
 }
 
-export const supportTeamImage = "/support-team.png";
+export const supportTeamImage = "/support-team.webp";
