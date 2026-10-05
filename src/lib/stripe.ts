@@ -8,7 +8,7 @@ export function getStripePaymentLink() {
   return process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK?.trim() ?? "";
 }
 
-/** When true, card UI works but checkout skips Stripe redirect and shows bank/PayPal fallback. */
+/** When true, card UI works but checkout skips Stripe redirect and shows bank transfer fallback. */
 export function isStripeCardPaused() {
   return process.env.NEXT_PUBLIC_STRIPE_CARD_PAUSED === "true";
 }

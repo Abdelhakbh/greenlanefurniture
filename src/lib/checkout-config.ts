@@ -2,8 +2,6 @@ import { site } from "./site";
 
 /** Public payment details (safe for browser). Set in Vercel env. */
 export const checkoutConfig = {
-  paypalEmail:
-    process.env.NEXT_PUBLIC_PAYPAL_EMAIL ?? site.email,
   bankAccountName:
     process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME ?? site.legalName,
   bankSortCode:
@@ -13,7 +11,7 @@ export const checkoutConfig = {
   shippingAmount: 0,
 } as const;
 
-export type PaymentMethod = "card" | "bank" | "paypal";
+export type PaymentMethod = "card" | "bank";
 
 export const PENDING_ORDER_KEY = "green-lane-order-pending";
 

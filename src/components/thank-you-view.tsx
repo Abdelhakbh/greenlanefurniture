@@ -19,10 +19,8 @@ export function ThankYouView() {
 
   const method = params.get("method") ?? order?.method ?? "bank";
   const stripePending = params.get("stripe_pending") === "1";
-  const ref =
-    params.get("ref") ?? order?.ref ?? "—";
-  const wooNumber =
-    params.get("woo") ?? order?.wooOrderNumber ?? null;
+  const ref = params.get("ref") ?? order?.ref ?? "—";
+  const wooNumber = params.get("woo") ?? order?.wooOrderNumber ?? null;
   const totalParam = parseFloat(params.get("total") ?? "0");
   const total = order?.total ?? totalParam;
 
@@ -36,7 +34,8 @@ export function ThankYouView() {
     }
   }, [clearCart]);
 
-  const isPayPal = method === "paypal";
+  const showBankInstructions =
+    method === "bank" || (method === "card" && stripePending);
 
   return (
     <div className="mx-auto max-w-[680px] px-6 py-12">
@@ -49,8 +48,8 @@ export function ThankYouView() {
       {stripePending && method === "card" && (
         <p className="mt-4 rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           Card processing is temporarily unavailable. Your order is saved — please
-          complete payment below by <strong>bank transfer</strong> or{" "}
-          <strong>PayPal</strong> using the same reference.
+          complete payment by <strong>bank transfer</strong> below using the same
+          reference.
         </p>
       )}
 
@@ -70,37 +69,18 @@ export function ThankYouView() {
         an order notice if mail is configured on the shop.
       </p>
 
-      <div className="mt-8 rounded-sm border-2 border-pine/30 bg-lane-tint/50 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pine">
-          {isPayPal && !stripePending ? "PayPal payment" : "Bank transfer"}
-        </p>
-        <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
-          {formatPrice(total)}
-        </p>
-        <p className="mt-1 text-sm text-foreground/60">
-          Send exactly this amount (in GBP).
-        </p>
+      {showBankInstructions && (
+        <div className="mt-8 rounded-sm border-2 border-pine/30 bg-lane-tint/50 p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pine">
+            Bank transfer
+          </p>
+          <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
+            {formatPrice(total)}
+          </p>
+          <p className="mt-1 text-sm text-foreground/60">
+            Send exactly this amount (in GBP).
+          </p>
 
-        {isPayPal && !stripePending ? (
-          <dl className="mt-6 space-y-3 text-sm">
-            <div>
-              <dt className="text-foreground/55">PayPal email</dt>
-              <dd className="text-lg font-semibold text-foreground">
-                {checkoutConfig.paypalEmail}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-foreground/55">Payment note / reference</dt>
-              <dd className="font-medium">{ref}</dd>
-            </div>
-            <div>
-              <dt className="text-foreground/55">Amount to send</dt>
-              <dd className="font-semibold tabular-nums">
-                {formatPrice(total)}
-              </dd>
-            </div>
-          </dl>
-        ) : (
           <dl className="mt-6 space-y-3 text-sm">
             <div>
               <dt className="text-foreground/55">Account name</dt>
@@ -131,8 +111,8 @@ export function ThankYouView() {
               </dd>
             </div>
           </dl>
-        )}
-      </div>
+        </div>
+      )}
 
       <p className="mt-6 text-sm leading-relaxed text-foreground/65">
         Questions? Email{" "}

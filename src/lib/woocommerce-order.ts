@@ -76,12 +76,6 @@ export type CreateWooOrderInput = {
 };
 
 function paymentForMethod(method: CreateWooOrderInput["method"]) {
-  if (method === "paypal") {
-    return {
-      payment_method: "bacs",
-      payment_method_title: "PayPal (manual)",
-    };
-  }
   if (method === "card") {
     return {
       payment_method: "stripe",
@@ -157,7 +151,11 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
   const noteParts = [
     input.customerNote?.trim(),
     `Storefront reference: ${input.ref}`,
-    `Payment: ${input.method === "paypal" ? "PayPal (awaiting payment)" : "Bank transfer (awaiting payment)"}`,
+    `Payment: ${
+      input.method === "card"
+        ? "Card (Stripe, awaiting payment)"
+        : "Bank transfer (awaiting payment)"
+    }`,
   ].filter(Boolean);
 
   const payload = {

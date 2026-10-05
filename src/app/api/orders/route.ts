@@ -26,11 +26,7 @@ export async function POST(req: Request) {
   }
 
   if (!body.ref?.trim()) return bad("Missing order reference.");
-  if (
-    body.method !== "bank" &&
-    body.method !== "paypal" &&
-    body.method !== "card"
-  ) {
+  if (body.method !== "bank" && body.method !== "card") {
     return bad("Invalid payment method.");
   }
   if (!Array.isArray(body.lines) || !body.lines.length) {

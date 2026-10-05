@@ -216,14 +216,12 @@ export function CheckoutView() {
           <>
             Card entry uses <strong>Stripe</strong> secure fields. While card
             capture is briefly paused, your order is still saved — use{" "}
-            <strong>bank transfer</strong> or <strong>PayPal</strong> on the
-            confirmation page if needed.
+            <strong>bank transfer</strong> on the confirmation page if needed.
           </>
         ) : (
           <>
-            Pay by <strong>card (Stripe)</strong>, <strong>bank transfer</strong>
-            , or <strong>PayPal</strong>. Card details are handled by Stripe —
-            not stored on our servers.
+            Pay by <strong>card (Stripe)</strong> or <strong>bank transfer</strong>
+            . Card details are handled by Stripe — not stored on our servers.
           </>
         )}
       </div>
@@ -308,13 +306,6 @@ export function CheckoutView() {
                 onChange={() => setMethod("bank")}
                 title="Bank transfer"
                 hint="UK bank payment — instructions on confirmation page"
-              />
-              <PaymentOption
-                id="pay-paypal"
-                checked={method === "paypal"}
-                onChange={() => setMethod("paypal")}
-                title="PayPal"
-                hint="Send payment to our PayPal account"
               />
             </div>
 
@@ -403,16 +394,14 @@ export function CheckoutView() {
                 : isStripePaymentLinkConfigured(getStripePaymentLink())
                   ? "Continue to secure payment"
                   : "Place order"
-              : method === "paypal"
-                ? "Continue to PayPal instructions"
-                : "Continue to bank transfer details"}
+              : "Continue to bank transfer details"}
           </button>
           <p className="mt-3 text-center text-xs text-foreground/45">
             {method === "card" ? (
               <>
                 🔒 SSL encrypted
                 {stripePaused
-                  ? " · Card charge paused — bank/PayPal on next page if needed"
+                  ? " · Card charge paused — bank transfer on next page if needed"
                   : " · Powered by Stripe"}
               </>
             ) : (

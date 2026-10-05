@@ -120,7 +120,7 @@ export function CartSheet() {
             Go to checkout
           </a>
           <p className="mt-2 text-center text-xs text-foreground/55">
-            Pay by bank transfer or PayPal
+            Pay by card or bank transfer
           </p>
         </div>
       </aside>
