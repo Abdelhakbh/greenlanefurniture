@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import type { PaymentMethod } from "@/lib/checkout-config";
+import { assertPaymentIntentSucceeded } from "@/lib/stripe-server";
 import {
+  computeExpectedOrderTotalPence,
   createWooCommerceOrder,
   type CreateWooOrderLine,
 } from "@/lib/woocommerce-order";
@@ -11,9 +13,7 @@ type OrderBody = {
   shipping: number;
   lines: CreateWooOrderLine[];
   billing: Record<string, string>;
-  discountAmount?: number;
-  discountPercent?: number;
-  amountDue?: number;
+  paymentIntentId?: string;
 };
 
 function bad(message: string, status = 400) {
@@ -29,8 +29,11 @@ export async function POST(req: Request) {
   }
 
   if (!body.ref?.trim()) return bad("Missing order reference.");
-  if (body.method !== "bank") {
+  if (body.method !== "card") {
     return bad("Invalid payment method.");
+  }
+  if (!body.paymentIntentId?.trim()) {
+    return bad("Missing payment confirmation.");
   }
   if (!Array.isArray(body.lines) || !body.lines.length) {
     return bad("Your bag is empty.");
@@ -74,11 +77,23 @@ export async function POST(req: Request) {
         }
       : undefined;
 
+  const shippingTotal = Number(body.shipping) || 0;
+
   try {
+    const expectedPence = await computeExpectedOrderTotalPence(
+      body.lines,
+      shippingTotal,
+    );
+    await assertPaymentIntentSucceeded(
+      body.paymentIntentId.trim(),
+      expectedPence,
+      body.ref.trim(),
+    );
+
     const result = await createWooCommerceOrder({
       ref: body.ref.trim(),
       method: body.method,
-      shippingTotal: Number(body.shipping) || 0,
+      shippingTotal,
       lines: body.lines,
       billing: {
         first_name,
@@ -92,9 +107,7 @@ export async function POST(req: Request) {
       },
       shipping,
       customerNote: b.notes?.trim(),
-      discountAmount: body.discountAmount,
-      discountPercent: body.discountPercent,
-      amountDue: body.amountDue,
+      stripePaymentIntentId: body.paymentIntentId.trim(),
     });
 
     return NextResponse.json(result);
@@ -105,7 +118,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "We could not save your order. Please try again or contact us by phone.",
+          "We could not complete your order. If you were charged, contact us with your payment reference.",
         detail: process.env.NODE_ENV === "development" ? message : undefined,
       },
       { status: 502 },

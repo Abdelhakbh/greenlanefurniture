@@ -3,38 +3,41 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useCart } from "@/components/cart-context";
-import { StripePaymentSection } from "@/components/stripe-card-panel";
 import {
-  CARD_UNAVAILABLE_MESSAGE,
+  StripePaymentSection,
+  type StripeBillingDetails,
+} from "@/components/stripe-card-panel";
+import {
   checkoutConfig,
-  computeBankTransferTotals,
+  computeOrderTotal,
   generateOrderRef,
   PENDING_ORDER_KEY,
   type PendingOrder,
 } from "@/lib/checkout-config";
 import { formatPrice } from "@/lib/format";
-import { site } from "@/lib/site";
 
 export function CheckoutView() {
   const router = useRouter();
   const { lines } = useCart();
-  const [shipDifferent, setShipDifferent] = useState(false);
-  const [cardNotice, setCardNotice] = useState("");
+  const formRef = useRef<HTMLFormElement>(null);
   const [submitError, setSubmitError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [shipDifferent, setShipDifferent] = useState(false);
+
+  const linesKey = lines.map((l) => `${l.variantId}:${l.qty}`).join("|");
+  const orderRef = useMemo(() => generateOrderRef(), [linesKey]);
 
   const subtotal = useMemo(
     () => lines.reduce((s, l) => s + l.price * l.qty, 0),
     [lines],
   );
   const shipping = checkoutConfig.shippingAmount;
-  const { discountAmount, total } = useMemo(
-    () => computeBankTransferTotals(subtotal, shipping),
+  const { total } = useMemo(
+    () => computeOrderTotal(subtotal, shipping),
     [subtotal, shipping],
   );
-
   if (!lines.length) {
     return (
       <div className="mx-auto max-w-lg px-6 py-20 text-center">
@@ -46,7 +49,7 @@ export function CheckoutView() {
     );
   }
 
-  function validate(form: HTMLFormElement) {
+  function validateForm(form: HTMLFormElement) {
     let ok = true;
     form.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
       "[data-required]",
@@ -56,42 +59,61 @@ export function CheckoutView() {
         ok = false;
       } else el.classList.remove("border-red-500");
     });
-    const terms = form.querySelector<HTMLInputElement>("#terms");
+    const terms = document.getElementById("terms") as HTMLInputElement | null;
     if (!terms?.checked) ok = false;
     return ok;
   }
 
-  function onCardAttempt() {
-    setCardNotice(CARD_UNAVAILABLE_MESSAGE);
+  function readBilling(): StripeBillingDetails | null {
+    const form = formRef.current;
+    if (!form || !validateForm(form)) return null;
+    const d = Object.fromEntries(new FormData(form).entries()) as Record<
+      string,
+      string
+    >;
+    const first = d.first_name?.trim();
+    const last = d.last_name?.trim();
+    const email = d.email?.trim();
+    const address1 = d.address1?.trim();
+    const city = d.city?.trim();
+    const postcode = d.postcode?.trim();
+    const country = d.country?.trim() || "GB";
+    if (!first || !last || !email || !address1 || !city || !postcode) {
+      return null;
+    }
+    return {
+      name: `${first} ${last}`,
+      email,
+      phone: d.phone?.trim() || undefined,
+      address: {
+        line1: address1,
+        city,
+        postal_code: postcode,
+        country,
+      },
+    };
   }
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSubmitError("");
-    const form = e.currentTarget;
-    if (!validate(form)) return;
-
-    setSubmitting(true);
+  async function onPaymentSuccess(paymentIntentId: string) {
+    const form = formRef.current;
+    if (!form) return;
     const billing = Object.fromEntries(new FormData(form).entries()) as Record<
       string,
       string
     >;
-    const ref = generateOrderRef();
-    const method = "bank" as const;
 
-    let wooOrderId: number | undefined;
-    let wooOrderNumber: string | undefined;
+    setSubmitting(true);
+    setSubmitError("");
+
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ref,
-          method,
+          ref: orderRef,
+          method: "card",
           shipping,
-          discountAmount,
-          discountPercent: checkoutConfig.bankTransferDiscountPercent,
-          amountDue: total,
+          paymentIntentId,
           lines: lines.map((l) => ({
             productId: l.productId,
             variantId: l.variantId,
@@ -108,72 +130,86 @@ export function CheckoutView() {
       if (!res.ok) {
         setSubmitError(
           data.error ??
-            "We could not save your order. Please try again or call us.",
+            "We could not save your order. Please contact us with your card receipt.",
         );
         setSubmitting(false);
         return;
       }
-      wooOrderId = data.wooOrderId;
-      wooOrderNumber = data.wooOrderNumber;
+
+      const pending: PendingOrder = {
+        ref: orderRef,
+        method: "card",
+        total,
+        subtotal,
+        shipping,
+        stripePaymentIntentId: paymentIntentId,
+        wooOrderId: data.wooOrderId,
+        wooOrderNumber: data.wooOrderNumber,
+        lines: lines.map((l) => ({
+          productId: l.productId,
+          variantId: l.variantId,
+          title: l.title,
+          qty: l.qty,
+          price: l.price,
+          image: l.image,
+          optionLabel: l.optionLabel,
+        })),
+        billing,
+        createdAt: new Date().toISOString(),
+      };
+      try {
+        sessionStorage.setItem(PENDING_ORDER_KEY, JSON.stringify(pending));
+      } catch {
+        /* ignore */
+      }
+
+      const q = new URLSearchParams({
+        method: "card",
+        ref: orderRef,
+        total: total.toFixed(2),
+      });
+      if (data.wooOrderNumber) q.set("woo", data.wooOrderNumber);
+      router.push(`/checkout/thank-you?${q.toString()}`);
     } catch {
       setSubmitError(
-        "Network error — your order was not saved. Check your connection and try again.",
+        "Network error — if your card was charged, email us with reference " +
+          orderRef,
       );
       setSubmitting(false);
-      return;
     }
+  }
 
-    const pending: PendingOrder = {
-      ref,
-      method,
-      total,
-      subtotal,
-      shipping,
-      discountAmount,
-      discountPercent: checkoutConfig.bankTransferDiscountPercent,
-      wooOrderId,
-      wooOrderNumber,
-      lines: lines.map((l) => ({
-        productId: l.productId,
-        variantId: l.variantId,
-        title: l.title,
-        qty: l.qty,
-        price: l.price,
-        image: l.image,
-        optionLabel: l.optionLabel,
-      })),
-      billing,
-      createdAt: new Date().toISOString(),
-    };
-    try {
-      sessionStorage.setItem(PENDING_ORDER_KEY, JSON.stringify(pending));
-    } catch {
-      /* ignore */
+  function onPaymentError(message: string) {
+    setSubmitError(message);
+    setSubmitting(false);
+  }
+
+  function getBillingForStripe() {
+    setSubmitError("");
+    const details = readBilling();
+    if (!details) {
+      setSubmitError(
+        "Please complete all required fields and accept the terms before paying.",
+      );
+      return null;
     }
+    return details;
+  }
 
-    const q = new URLSearchParams({
-      method,
-      ref,
-      total: total.toFixed(2),
-    });
-    if (wooOrderNumber) q.set("woo", wooOrderNumber);
-    router.push(`/checkout/thank-you?${q.toString()}`);
+  function onPayStart() {
+    setSubmitting(true);
+    setSubmitError("");
   }
 
   return (
     <div className="mx-auto max-w-[1180px] px-[clamp(1rem,4vw,2rem)] py-8 pb-16">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-foreground/10 pb-4">
-        <Link href="/" className="font-display text-xl font-medium">
-          {site.name}
-        </Link>
-        <span className="text-sm text-foreground/55">Secure checkout</span>
-      </header>
-
-      <form
-        onSubmit={onSubmit}
-        className="grid items-start gap-10 lg:grid-cols-[1fr_400px]"
-      >
-        <div className="space-y-8">
+      <div className="grid items-start gap-10 lg:grid-cols-[1fr_400px]">
+        <form
+          ref={formRef}
+          id="checkout-billing"
+          className="space-y-8"
+          onSubmit={(e) => e.preventDefault()}
+        >
           <section>
             <h2 className="mb-4 font-display text-xl font-medium">
               Billing details
@@ -235,54 +271,34 @@ export function CheckoutView() {
 
           <section>
             <h2 className="mb-4 font-display text-xl font-medium">Payment</h2>
-
-            <div className="mb-4 rounded-lg border border-[#c4e8d4] bg-[#edf8f0] px-4 py-3.5 text-sm leading-relaxed text-[#1e4620]">
-              <p className="font-medium">
-                For a short time we&apos;re accepting{" "}
-                <strong>bank transfer only</strong>.
-              </p>
-              <p className="mt-1.5 text-[#2d5a34]">
-                Our card payment partner is temporarily unavailable. To say thank
-                you for your patience, you&apos;ll receive{" "}
-                <strong>{checkoutConfig.bankTransferDiscountPercent}% off</strong>{" "}
-                when you pay by bank transfer — the discount is applied below.
-              </p>
-            </div>
-
-            <div className="mb-4 overflow-hidden rounded-lg border-2 border-[#0570de] bg-white shadow-sm">
-              <div className="flex items-center gap-3 border-b border-[#e6e6e6] bg-[#f6f9fc] px-4 py-3.5">
-                <span
-                  className="size-[18px] shrink-0 rounded-full border-[5px] border-[#0570de] bg-white"
-                  aria-hidden
-                />
-                <span className="text-sm font-medium">Bank transfer</span>
-                <span className="rounded-full bg-[#0570de] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                  {checkoutConfig.bankTransferDiscountPercent}% off
-                </span>
-              </div>
-              <p className="px-4 py-3 text-sm text-[#30313d]">
-                Place your order here — bank details and your discounted total
-                appear on the next page. Use reference{" "}
-                <span className="text-foreground/55">(shown after checkout)</span>{" "}
-                when you pay.
-              </p>
-            </div>
-
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-[#697386]">
-              Card (temporarily unavailable)
+            <p className="mb-4 text-sm text-foreground/65">
+              Pay securely by debit or credit card. Your card is processed by
+              Stripe; we never store card numbers on our servers.
             </p>
             <StripePaymentSection
-              onCardAttempt={onCardAttempt}
-              cardNotice={cardNotice}
+              orderRef={orderRef}
+              lines={lines.map((l) => ({
+                productId: l.productId,
+                variantId: l.variantId,
+                qty: l.qty,
+              }))}
+              shipping={shipping}
+              getBilling={getBillingForStripe}
+              onPayStart={onPayStart}
+              disabled={submitting}
+              submitLabel={
+                submitting ? "Processing…" : `Pay ${formatPrice(total)}`
+              }
+              onSuccess={onPaymentSuccess}
+              onError={onPaymentError}
             />
-
             {submitError && (
               <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
                 {submitError}
               </p>
             )}
           </section>
-        </div>
+        </form>
 
         <aside className="rounded-sm border border-foreground/10 bg-white p-6 lg:sticky lg:top-24">
           <h2 className="font-display text-lg font-medium">Your order</h2>
@@ -291,7 +307,13 @@ export function CheckoutView() {
               <li key={l.variantId} className="flex gap-3 text-sm">
                 <div className="relative size-14 shrink-0 overflow-hidden rounded-sm bg-bone-dim">
                   {l.image && (
-                    <Image src={l.image} alt="" fill className="object-cover" sizes="56px" />
+                    <Image
+                      src={l.image}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -318,20 +340,20 @@ export function CheckoutView() {
                 {shipping === 0 ? "Free" : formatPrice(shipping)}
               </span>
             </div>
-            <div className="flex justify-between text-lane-green">
-              <span>
-                Bank transfer discount ({checkoutConfig.bankTransferDiscountPercent}%)
-              </span>
-              <span className="tabular-nums">−{formatPrice(discountAmount)}</span>
-            </div>
             <div className="flex justify-between border-t border-foreground/10 pt-3 text-base font-semibold">
-              <span>Total to pay</span>
+              <span>Total</span>
               <span className="tabular-nums">{formatPrice(total)}</span>
             </div>
           </div>
 
           <label className="mt-6 flex gap-2 text-sm">
-            <input type="checkbox" id="terms" name="terms" value="1" />
+            <input
+              type="checkbox"
+              id="terms"
+              name="terms"
+              form="checkout-billing"
+              value="1"
+            />
             <span>
               I agree to the{" "}
               <Link href="/terms" className="underline">
@@ -344,16 +366,8 @@ export function CheckoutView() {
               *
             </span>
           </label>
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-4 w-full rounded-md bg-pine py-3.5 text-sm font-semibold text-bone hover:brightness-95 disabled:opacity-60"
-          >
-            {submitting ? "Processing…" : "Place order — pay by bank transfer"}
-          </button>
         </aside>
-      </form>
+      </div>
     </div>
   );
 }

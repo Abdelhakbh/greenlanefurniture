@@ -1,23 +1,10 @@
-import { site } from "./site";
-
 export const checkoutConfig = {
   shippingAmount: 0,
-  /** Courtesy discount when paying by bank transfer during card processor downtime. */
-  bankTransferDiscountPercent: 8,
-  bankAccountName:
-    process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME ?? site.legalName,
-  bankSortCode:
-    process.env.NEXT_PUBLIC_BANK_SORT_CODE ?? "00-00-00",
-  bankAccountNumber:
-    process.env.NEXT_PUBLIC_BANK_ACCOUNT_NUMBER ?? "00000000",
 } as const;
 
-export type PaymentMethod = "bank";
+export type PaymentMethod = "card";
 
 export const PENDING_ORDER_KEY = "green-lane-order-pending";
-
-export const CARD_UNAVAILABLE_MESSAGE =
-  "Card payments aren't available right now. Please complete your order with bank transfer — your 8% discount is applied automatically.";
 
 export type PendingOrder = {
   ref: string;
@@ -25,8 +12,7 @@ export type PendingOrder = {
   total: number;
   subtotal: number;
   shipping: number;
-  discountAmount: number;
-  discountPercent: number;
+  stripePaymentIntentId?: string;
   wooOrderId?: number;
   wooOrderNumber?: string;
   lines: {
@@ -51,14 +37,11 @@ export function generateOrderRef() {
   return `GLF-${y}${m}${day}-${r}`;
 }
 
-export function computeBankTransferTotals(subtotal: number, shipping: number) {
-  const beforeDiscount = subtotal + shipping;
-  const discountAmount =
-    Math.round(
-      beforeDiscount *
-        (checkoutConfig.bankTransferDiscountPercent / 100) *
-        100,
-    ) / 100;
-  const total = Math.round((beforeDiscount - discountAmount) * 100) / 100;
-  return { beforeDiscount, discountAmount, total };
+export function computeOrderTotal(subtotal: number, shipping: number) {
+  const total = Math.round((subtotal + shipping) * 100) / 100;
+  return { total };
+}
+
+export function amountToPence(amount: number) {
+  return Math.round(amount * 100);
 }

@@ -1,10 +1,12 @@
-import type { PaymentMethod } from "./checkout-config";
+import { amountToPence, type PaymentMethod } from "./checkout-config";
 
 type WooOrderResponse = {
   id: number;
   number: string;
   order_key: string;
 };
+
+type WooPriceRow = { price: string; regular_price: string };
 
 function getConfig() {
   const base = process.env.WORDPRESS_URL?.replace(/\/$/, "");
@@ -14,6 +16,25 @@ function getConfig() {
     throw new Error("WooCommerce is not configured on the server.");
   }
   return { base, key, secret };
+}
+
+async function wooFetch<T>(path: string, attempt = 0): Promise<T> {
+  const { base, key, secret } = getConfig();
+  const url = new URL(`${base}/wp-json/wc/v3${path}`);
+  url.searchParams.set("consumer_key", key);
+  url.searchParams.set("consumer_secret", secret);
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  if (!res.ok) {
+    if (attempt < 3 && (res.status === 429 || res.status >= 500)) {
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      return wooFetch<T>(path, attempt + 1);
+    }
+    const detail = await res.text();
+    throw new Error(
+      `WooCommerce fetch failed (${res.status}): ${detail.slice(0, 200)}`,
+    );
+  }
+  return res.json() as Promise<T>;
 }
 
 async function wooMutate<T>(
@@ -45,11 +66,46 @@ async function wooMutate<T>(
   return res.json() as Promise<T>;
 }
 
+function parseWooPrice(row: WooPriceRow) {
+  const raw = row.price || row.regular_price || "0";
+  const n = Number.parseFloat(raw);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error("Invalid product price from WooCommerce.");
+  }
+  return n;
+}
+
+async function lineUnitPrice(line: CreateWooOrderLine) {
+  if (line.variantId && line.variantId !== line.productId) {
+    const v = await wooFetch<WooPriceRow>(
+      `/products/${line.productId}/variations/${line.variantId}`,
+    );
+    return parseWooPrice(v);
+  }
+  const p = await wooFetch<WooPriceRow>(`/products/${line.productId}`);
+  return parseWooPrice(p);
+}
+
 export type CreateWooOrderLine = {
   productId: number;
   variantId: number;
   qty: number;
 };
+
+export async function computeExpectedOrderTotalPence(
+  lines: CreateWooOrderLine[],
+  shippingTotal: number,
+) {
+  const prices = await Promise.all(
+    lines.map(async (line) => {
+      const unit = await lineUnitPrice(line);
+      return unit * line.qty;
+    }),
+  );
+  const subtotal = prices.reduce((s, n) => s + n, 0);
+  const total = Math.round((subtotal + shippingTotal) * 100) / 100;
+  return amountToPence(total);
+}
 
 export type CreateWooOrderInput = {
   ref: string;
@@ -73,22 +129,20 @@ export type CreateWooOrderInput = {
     country: string;
   };
   customerNote?: string;
-  discountAmount?: number;
-  discountPercent?: number;
-  amountDue?: number;
+  stripePaymentIntentId?: string;
 };
 
-function paymentForMethod(_method: CreateWooOrderInput["method"]) {
+function paymentForMethod(_method: PaymentMethod) {
   return {
-    payment_method: "bacs",
-    payment_method_title: "Bank transfer",
+    payment_method: "stripe",
+    payment_method_title: "Card (Stripe)",
+    set_paid: true,
+    status: "processing" as const,
   };
 }
 
 export async function createWooCommerceOrder(input: CreateWooOrderInput) {
-  const { payment_method, payment_method_title } = paymentForMethod(
-    input.method,
-  );
+  const pay = paymentForMethod(input.method);
 
   const billing = {
     first_name: input.billing.first_name,
@@ -145,10 +199,9 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
         ]
       : [];
 
-  const paymentNote =
-    input.amountDue != null
-      ? `Payment: Bank transfer (awaiting). Amount due after ${input.discountPercent ?? 8}% discount: £${input.amountDue.toFixed(2)}`
-      : "Payment: Bank transfer (awaiting payment)";
+  const paymentNote = input.stripePaymentIntentId
+    ? `Payment: Card (Stripe). PaymentIntent ID: ${input.stripePaymentIntentId}`
+    : "Payment: Card (Stripe)";
 
   const noteParts = [
     input.customerNote?.trim(),
@@ -157,10 +210,10 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
   ].filter(Boolean);
 
   const payload = {
-    payment_method,
-    payment_method_title,
-    set_paid: false,
-    status: "on-hold",
+    payment_method: pay.payment_method,
+    payment_method_title: pay.payment_method_title,
+    set_paid: pay.set_paid,
+    status: pay.status,
     customer_note: noteParts.join("\n\n"),
     billing,
     shipping: shipTo,
@@ -170,16 +223,13 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
       { key: "_glf_order_ref", value: input.ref },
       { key: "_glf_payment_method", value: input.method },
       { key: "_created_via", value: "greenlanefurniture-headless" },
-      ...(input.discountAmount != null
+      ...(input.stripePaymentIntentId
         ? [
             {
-              key: "_glf_bank_discount",
-              value: String(input.discountAmount),
+              key: "_stripe_payment_intent_id",
+              value: input.stripePaymentIntentId,
             },
           ]
-        : []),
-      ...(input.amountDue != null
-        ? [{ key: "_glf_amount_due", value: String(input.amountDue) }]
         : []),
     ],
   };

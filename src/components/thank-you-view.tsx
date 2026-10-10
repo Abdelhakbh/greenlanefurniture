@@ -4,11 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCart } from "@/components/cart-context";
-import {
-  checkoutConfig,
-  PENDING_ORDER_KEY,
-  type PendingOrder,
-} from "@/lib/checkout-config";
+import { PENDING_ORDER_KEY, type PendingOrder } from "@/lib/checkout-config";
 import { formatPrice } from "@/lib/format";
 import { site } from "@/lib/site";
 
@@ -21,7 +17,6 @@ export function ThankYouView() {
   const wooNumber = params.get("woo") ?? order?.wooOrderNumber ?? null;
   const totalParam = parseFloat(params.get("total") ?? "0");
   const total = order?.total ?? totalParam;
-  const discountAmount = order?.discountAmount ?? 0;
 
   useEffect(() => {
     try {
@@ -39,7 +34,7 @@ export function ThankYouView() {
         Order received
       </p>
       <h1 className="mt-2 font-display text-[clamp(1.8rem,4vw,2.4rem)] font-medium">
-        Thank you — bank transfer details
+        Thank you — payment confirmed
       </h1>
 
       <p className="mt-3 text-foreground/70">
@@ -53,54 +48,16 @@ export function ThankYouView() {
             Reference <strong className="text-foreground">{ref}</strong>
           </>
         )}
-        . Your {checkoutConfig.bankTransferDiscountPercent}% bank-transfer discount
-        is included in the amount below.
+        . Your card payment of{" "}
+        <strong className="text-foreground">{formatPrice(total)}</strong> was
+        successful.
       </p>
 
-      <div className="mt-8 rounded-sm border-2 border-pine/30 bg-lane-tint/50 p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-pine">
-          Bank transfer
+      <div className="mt-8 rounded-sm border border-foreground/10 bg-lane-tint/30 p-6 text-sm leading-relaxed text-foreground/75">
+        <p>
+          A receipt may be emailed to you from Stripe. We&apos;ll contact you
+          when your order is dispatched.
         </p>
-        {discountAmount > 0 && (
-          <p className="mt-2 text-sm text-lane-green">
-            Discount applied: −{formatPrice(discountAmount)}
-          </p>
-        )}
-        <p className="mt-3 text-2xl font-bold tabular-nums text-foreground">
-          {formatPrice(total)}
-        </p>
-        <p className="mt-1 text-sm text-foreground/60">
-          Send exactly this amount (in GBP).
-        </p>
-
-        <dl className="mt-6 space-y-3 text-sm">
-          <div>
-            <dt className="text-foreground/55">Account name</dt>
-            <dd className="font-medium">{checkoutConfig.bankAccountName}</dd>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-foreground/55">Sort code</dt>
-              <dd className="font-medium tabular-nums">
-                {checkoutConfig.bankSortCode}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-foreground/55">Account number</dt>
-              <dd className="font-medium tabular-nums">
-                {checkoutConfig.bankAccountNumber}
-              </dd>
-            </div>
-          </div>
-          <div>
-            <dt className="text-foreground/55">Reference (required)</dt>
-            <dd className="font-medium">{ref}</dd>
-          </div>
-          <div>
-            <dt className="text-foreground/55">Amount</dt>
-            <dd className="font-semibold tabular-nums">{formatPrice(total)}</dd>
-          </div>
-        </dl>
       </div>
 
       <p className="mt-6 text-sm leading-relaxed text-foreground/65">
