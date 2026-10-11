@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import type { StoreProduct } from "@/lib/catalog";
 import { toProductCard } from "@/lib/catalog";
+import { formatPrice } from "@/lib/format";
 import { useCart } from "./cart-context";
+import { VARIANT_IMAGE_EVENT } from "./product-gallery";
 
 export function AddToCart({ product }: { product: StoreProduct }) {
   const { add } = useCart();
@@ -46,6 +48,20 @@ export function AddToCart({ product }: { product: StoreProduct }) {
 
   return (
     <div className="space-y-5">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span className="text-[1.65rem] font-semibold tabular-nums text-foreground">
+          {formatPrice(card.price)}
+        </span>
+        {card.compareAt && card.compareAt > card.price && (
+          <span className="text-sm text-foreground/50">
+            Was price{" "}
+            <span className="line-through tabular-nums">
+              {formatPrice(card.compareAt)}
+            </span>
+          </span>
+        )}
+      </div>
+
       {hasOptions && (
         <fieldset>
           <legend className="mb-2.5 text-sm font-medium text-foreground/80">
@@ -64,7 +80,12 @@ export function AddToCart({ product }: { product: StoreProduct }) {
                 <button
                   key={v.id}
                   type="button"
-                  onClick={() => setVariantId(v.id)}
+                  onClick={() => {
+                    setVariantId(v.id);
+                    window.dispatchEvent(
+                      new CustomEvent(VARIANT_IMAGE_EVENT, { detail: v.image ?? null }),
+                    );
+                  }}
                   aria-pressed={selected}
                   disabled={!v.available}
                   className={`rounded-sm border px-4 py-2.5 text-sm transition-colors ${

@@ -9,6 +9,7 @@ export type StoreVariant = {
   option1: string | null;
   option2: string | null;
   option3: string | null;
+  image?: string | null;
 };
 
 export type StoreProduct = {

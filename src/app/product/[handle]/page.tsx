@@ -27,7 +27,7 @@ import {
 } from "@/lib/catalog";
 
 import { JsonLd } from "@/components/json-ld";
-import { formatPrice, stripHtml } from "@/lib/format";
+import { stripHtml } from "@/lib/format";
 import { buildPageMetadata, absoluteUrl } from "@/lib/metadata";
 import { site } from "@/lib/site";
 
@@ -256,34 +256,6 @@ export default async function ProductPage({
             </p>
 
           )}
-
-
-
-          <div className="mt-6 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-
-            <span className="text-[1.65rem] font-semibold tabular-nums text-foreground">
-
-              {formatPrice(card.price)}
-
-            </span>
-
-            {card.compareAt && card.compareAt > card.price && (
-
-              <span className="text-sm text-foreground/50">
-
-                Was price{" "}
-
-                <span className="line-through tabular-nums">
-
-                  {formatPrice(card.compareAt)}
-
-                </span>
-
-              </span>
-
-            )}
-
-          </div>
 
 
 

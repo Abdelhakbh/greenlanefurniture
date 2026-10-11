@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { StoreImage } from "@/lib/types";
+
+export const VARIANT_IMAGE_EVENT = "product-variant-image";
 
 export function ProductGallery({
   images,
@@ -11,9 +13,28 @@ export function ProductGallery({
   images: StoreImage[];
   title: string;
 }) {
-  const list = images.length ? images : [{ src: "", alt: null }];
+  const [extra, setExtra] = useState<StoreImage | null>(null);
+  const base = images.length ? images : [{ src: "", alt: null }];
+  const list = extra ? [extra, ...base] : base;
   const [active, setActive] = useState(0);
   const current = list[active] ?? list[0];
+
+  useEffect(() => {
+    function onVariantImage(e: Event) {
+      const src = (e as CustomEvent<string | null>).detail;
+      if (!src) return;
+      const idx = images.findIndex((img) => img.src === src);
+      if (idx >= 0) {
+        setExtra(null);
+        setActive(idx);
+      } else {
+        setExtra({ src, alt: title });
+        setActive(0);
+      }
+    }
+    window.addEventListener(VARIANT_IMAGE_EVENT, onVariantImage);
+    return () => window.removeEventListener(VARIANT_IMAGE_EVENT, onVariantImage);
+  }, [images, title]);
 
   return (
     <div className="space-y-3">
@@ -35,7 +56,7 @@ export function ProductGallery({
       </div>
       {list.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {list.slice(0, 8).map((img, i) => (
+          {list.map((img, i) => (
             <button
               key={img.src + i}
               type="button"

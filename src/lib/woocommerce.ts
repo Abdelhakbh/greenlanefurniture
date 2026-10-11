@@ -35,6 +35,7 @@ type WooVariation = {
   sale_price: string;
   stock_status: string;
   attributes: { name: string; option: string }[];
+  image?: { src: string } | null;
 };
 
 function getConfig() {
@@ -49,20 +50,42 @@ function getConfig() {
   return { base, key, secret };
 }
 
-async function wooFetch<T>(path: string, attempt = 0): Promise<T> {
+async function wooFetch<T>(path: string, attempt = 0, fresh = false): Promise<T> {
   const { base, key, secret } = getConfig();
   const url = new URL(`${base}/wp-json/wc/v3${path}`);
   url.searchParams.set("consumer_key", key);
   url.searchParams.set("consumer_secret", secret);
-  const res = await fetch(url.toString(), { next: { revalidate: 600 } });
+  const res = await fetch(
+    url.toString(),
+    fresh ? { cache: "no-store" } : { next: { revalidate: 300 } },
+  );
   if (!res.ok) {
     if (attempt < 5 && (res.status === 429 || res.status >= 500)) {
       await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
-      return wooFetch<T>(path, attempt + 1);
+      return wooFetch<T>(path, attempt + 1, fresh);
     }
     throw new Error(`WooCommerce fetch failed: ${path} (${res.status})`);
   }
   return res.json() as Promise<T>;
+}
+
+/** An empty list may be a stale cache entry from when the store was empty — confirm live. */
+async function wooList<T>(path: string): Promise<T[]> {
+  const list = await wooFetch<T[]>(path);
+  if (Array.isArray(list) && list.length) return list;
+  return wooFetch<T[]>(path, 0, true);
+}
+
+async function wooListAllPages<T>(path: string): Promise<T[]> {
+  const all: T[] = [];
+  const sep = path.includes("?") ? "&" : "?";
+  for (let page = 1; page < 30; page++) {
+    const batch = await wooList<T>(`${path}${sep}per_page=100&page=${page}`);
+    if (!batch.length) break;
+    all.push(...batch);
+    if (batch.length < 100) break;
+  }
+  return all;
 }
 
 function variantFromSimple(p: WooProduct): StoreVariant {
@@ -96,6 +119,7 @@ function variantFromWoo(v: WooVariation): StoreVariant {
     option1: opts[0] ?? null,
     option2: opts[1] ?? null,
     option3: opts[2] ?? null,
+    image: v.image?.src ?? null,
   };
 }
 
@@ -202,20 +226,11 @@ export function toProductCard(p: StoreProduct): ProductCard {
 
 export async function getAllProducts(): Promise<StoreProduct[]> {
   try {
-    const all: WooProduct[] = [];
-    let page = 1;
-    while (page < 30) {
-      const batch = await wooFetch<WooProduct[]>(
-        `/products?status=publish&per_page=100&page=${page}`,
-      );
-      if (!batch.length) break;
-      all.push(...batch);
-      if (batch.length < 100) break;
-      page++;
-    }
+    const all = await wooListAllPages<WooProduct>("/products?status=publish");
     const mapped = await Promise.all(all.map((p) => mapWooProduct(p, false)));
     return mapped.filter((p) => p.title && p.handle);
-  } catch {
+  } catch (e) {
+    console.error("getAllProducts failed", e);
     return [];
   }
 }
@@ -232,22 +247,21 @@ export async function getProduct(handle: string) {
 export async function getCollections(): Promise<StoreCollection[]> {
   try {
     return await fetchCollections();
-  } catch {
+  } catch (e) {
+    console.error("getCollections failed", e);
     return [];
   }
 }
 
 async function fetchCollections(): Promise<StoreCollection[]> {
-  const cats = await wooFetch<
-    {
-      id: number;
-      name: string;
-      slug: string;
-      description: string;
-      count: number;
-      image: { src: string } | null;
-    }[]
-  >("/products/categories?per_page=100&hide_empty=true");
+  const cats = await wooListAllPages<{
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    count: number;
+    image: { src: string } | null;
+  }>("/products/categories?hide_empty=true");
   return cats
     .filter((c) => c.slug !== "uncategorized")
     .map((c) => ({
@@ -262,13 +276,13 @@ async function fetchCollections(): Promise<StoreCollection[]> {
 
 
 export async function getCollectionProducts(handle: string) {
-  const cats = await wooFetch<{ id: number; slug: string }[]>(
+  const cats = await wooList<{ id: number; slug: string }>(
     `/products/categories?slug=${encodeURIComponent(handle)}`,
   );
   const cat = cats[0];
   if (!cat) return [];
-  const products = await wooFetch<WooProduct[]>(
-    `/products?category=${cat.id}&status=publish&per_page=100`,
+  const products = await wooListAllPages<WooProduct>(
+    `/products?category=${cat.id}&status=publish`,
   );
   return Promise.all(products.map((p) => mapWooProduct(p, false)));
 }
