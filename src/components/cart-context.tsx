@@ -42,13 +42,44 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    let stored: CartLine[] = [];
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setLines(JSON.parse(raw) as CartLine[]);
+      if (raw) stored = JSON.parse(raw) as CartLine[];
     } catch {
       /* ignore */
     }
+    setLines(stored);
     setHydrated(true);
+
+    // Saved carts can reference products that were deleted or repriced since.
+    if (!stored.length) return;
+    fetch("/api/cart/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        lines: stored.map((l) => ({
+          productId: l.productId,
+          variantId: l.variantId,
+          qty: l.qty,
+        })),
+      }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { lines?: { variantId: number; price: number | null }[] } | null) => {
+        if (!data?.lines) return;
+        const prices = new Map(data.lines.map((l) => [l.variantId, l.price]));
+        setLines((prev) =>
+          prev.flatMap((l) => {
+            if (!prices.has(l.variantId)) return [l];
+            const price = prices.get(l.variantId);
+            return price == null ? [] : [{ ...l, price }];
+          }),
+        );
+      })
+      .catch(() => {
+        /* keep cart as-is if the check fails */
+      });
   }, []);
 
   useEffect(() => {

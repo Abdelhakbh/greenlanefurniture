@@ -86,6 +86,17 @@ async function lineUnitPrice(line: CreateWooOrderLine) {
   return parseWooPrice(p);
 }
 
+/** Current unit price, or null if the product/variation no longer exists. */
+export async function currentLineUnitPrice(line: CreateWooOrderLine) {
+  try {
+    return await lineUnitPrice(line);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (/\((400|404)\)/.test(msg)) return null;
+    throw e;
+  }
+}
+
 export type CreateWooOrderLine = {
   productId: number;
   variantId: number;
