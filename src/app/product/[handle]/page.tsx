@@ -27,7 +27,7 @@ import {
 } from "@/lib/catalog";
 
 import { JsonLd } from "@/components/json-ld";
-import { stripHtml } from "@/lib/format";
+import { stripHtml, variantSlug } from "@/lib/format";
 import { buildPageMetadata, absoluteUrl } from "@/lib/metadata";
 import { site } from "@/lib/site";
 
@@ -71,13 +71,21 @@ export default async function ProductPage({
 
   params,
 
+  searchParams,
+
 }: {
 
   params: Promise<{ handle: string }>;
 
+  searchParams: Promise<{ colour?: string | string[] }>;
+
 }) {
 
   const { handle } = await params;
+
+  const colourParam = (await searchParams).colour;
+
+  const requestedColour = Array.isArray(colourParam) ? colourParam[0] : colourParam;
 
   let product;
 
@@ -123,24 +131,64 @@ export default async function ProductPage({
 
 
 
-  const productLd = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.title,
-    description: plain.slice(0, 500) || product.title,
-    image: product.images.map((i) => i.src).filter(Boolean),
-    sku: String(product.id),
-    brand: { "@type": "Brand", name: site.name },
-    offers: {
-      "@type": "Offer",
-      url: absoluteUrl(`/product/${handle}`),
-      priceCurrency: "GBP",
-      price: card.price.toFixed(2),
-      availability: card.available
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
-    },
-  };
+  const selectedVariant = requestedColour
+    ? product.variants.find((v) => variantSlug(v) === requestedColour)
+    : undefined;
+
+  const hasColours =
+    product.variants.length > 1 && product.variants.some((v) => v.option1);
+
+  const ldDescription = plain.slice(0, 500) || product.title;
+
+  const brandLd = { "@type": "Brand", name: site.name };
+
+  const offerLd = (v: (typeof product.variants)[number], url: string) => ({
+    "@type": "Offer",
+    url,
+    priceCurrency: "GBP",
+    price: Number.parseFloat(v.price).toFixed(2),
+    itemCondition: "https://schema.org/NewCondition",
+    availability: v.available
+      ? "https://schema.org/InStock"
+      : "https://schema.org/OutOfStock",
+  });
+
+  const productLd = hasColours
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ProductGroup",
+        name: product.title,
+        description: ldDescription,
+        url: absoluteUrl(`/product/${handle}`),
+        brand: brandLd,
+        productGroupID: String(product.id),
+        variesBy: ["https://schema.org/color"],
+        hasVariant: product.variants.map((v) => {
+          const colour = [v.option1, v.option2, v.option3].filter(Boolean).join(" / ");
+          return {
+            "@type": "Product",
+            sku: String(v.id),
+            name: `${product.title} - ${colour}`,
+            description: ldDescription,
+            color: colour,
+            image: v.image ?? product.images[0]?.src,
+            offers: offerLd(v, absoluteUrl(`/product/${handle}?colour=${variantSlug(v)}`)),
+          };
+        }),
+      }
+    : {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product.title,
+        description: ldDescription,
+        image: product.images.map((i) => i.src).filter(Boolean),
+        sku: String(product.variants[0]?.id ?? product.id),
+        brand: brandLd,
+        offers: {
+          ...offerLd(product.variants[0], absoluteUrl(`/product/${handle}`)),
+          price: card.price.toFixed(2),
+        },
+      };
 
   return (
     <>
@@ -211,7 +259,11 @@ export default async function ProductPage({
 
       <div className="mx-auto grid max-w-[1240px] items-start gap-10 px-[clamp(1rem,4vw,3rem)] pb-12 lg:grid-cols-2 lg:gap-14">
 
-        <ProductGallery images={product.images} title={product.title} />
+        <ProductGallery
+          images={product.images}
+          title={product.title}
+          initialSrc={selectedVariant?.image}
+        />
 
 
 
@@ -261,7 +313,7 @@ export default async function ProductPage({
 
           <div className="mt-8">
 
-            <AddToCart product={product} />
+            <AddToCart product={product} initialVariantId={selectedVariant?.id} />
 
           </div>
 

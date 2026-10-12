@@ -243,6 +243,34 @@ export async function getAllProducts(): Promise<StoreProduct[]> {
   }
 }
 
+async function mapWithLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await fn(items[i]);
+      }
+    }),
+  );
+  return out;
+}
+
+/** Every product with descriptions and all variations (for the Google feed). */
+export async function getAllProductsWithVariants(): Promise<StoreProduct[]> {
+  const all = await wooListAllPages<WooProduct>(
+    `/products?${LIST_QUERY},description,short_description`,
+    25,
+  );
+  const mapped = await mapWithLimit(all, 8, (p) => mapWooProduct(p, true));
+  return mapped.filter((p) => p.title && p.handle);
+}
+
 export async function getProduct(handle: string) {
   const found = await wooFetch<WooProduct[]>(
     `/products?slug=${encodeURIComponent(handle)}&status=publish`,

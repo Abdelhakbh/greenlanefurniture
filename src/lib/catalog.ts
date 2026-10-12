@@ -27,6 +27,12 @@ export async function getAllProducts() {
   return useWooCommerce() ? woo.getAllProducts() : shopify.getAllProducts();
 }
 
+export async function getAllProductsWithVariants() {
+  return useWooCommerce()
+    ? woo.getAllProductsWithVariants()
+    : shopify.getAllProducts();
+}
+
 export async function getProduct(handle: string) {
   return useWooCommerce() ? woo.getProduct(handle) : shopify.getProduct(handle);
 }

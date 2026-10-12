@@ -2,6 +2,8 @@ import { buildGoogleShoppingFeedXml } from "@/lib/google-shopping-feed";
 
 export const revalidate = 3600;
 
+export const maxDuration = 60;
+
 export async function GET() {
   try {
     const xml = await buildGoogleShoppingFeedXml();

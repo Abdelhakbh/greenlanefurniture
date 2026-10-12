@@ -4,14 +4,22 @@ import { useState } from "react";
 import { Check, Minus, Plus } from "lucide-react";
 import type { StoreProduct } from "@/lib/catalog";
 import { toProductCard } from "@/lib/catalog";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, variantSlug } from "@/lib/format";
 import { useCart } from "./cart-context";
 import { VARIANT_IMAGE_EVENT } from "./product-gallery";
 
-export function AddToCart({ product }: { product: StoreProduct }) {
+export function AddToCart({
+  product,
+  initialVariantId,
+}: {
+  product: StoreProduct;
+  initialVariantId?: number;
+}) {
   const { add } = useCart();
   const [qty, setQty] = useState(1);
-  const [variantId, setVariantId] = useState(product.variants[0]?.id ?? 0);
+  const [variantId, setVariantId] = useState(
+    initialVariantId ?? product.variants[0]?.id ?? 0,
+  );
   const [added, setAdded] = useState(false);
 
   const variant =
@@ -85,6 +93,9 @@ export function AddToCart({ product }: { product: StoreProduct }) {
                     window.dispatchEvent(
                       new CustomEvent(VARIANT_IMAGE_EVENT, { detail: v.image ?? null }),
                     );
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("colour", variantSlug(v));
+                    window.history.replaceState(null, "", url);
                   }}
                   aria-pressed={selected}
                   disabled={!v.available}

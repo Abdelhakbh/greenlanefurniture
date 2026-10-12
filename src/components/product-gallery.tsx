@@ -9,14 +9,19 @@ export const VARIANT_IMAGE_EVENT = "product-variant-image";
 export function ProductGallery({
   images,
   title,
+  initialSrc,
 }: {
   images: StoreImage[];
   title: string;
+  initialSrc?: string | null;
 }) {
-  const [extra, setExtra] = useState<StoreImage | null>(null);
+  const initialIndex = initialSrc ? images.findIndex((img) => img.src === initialSrc) : -1;
+  const [extra, setExtra] = useState<StoreImage | null>(
+    initialSrc && initialIndex < 0 ? { src: initialSrc, alt: title } : null,
+  );
   const base = images.length ? images : [{ src: "", alt: null }];
   const list = extra ? [extra, ...base] : base;
-  const [active, setActive] = useState(0);
+  const [active, setActive] = useState(initialIndex > 0 ? initialIndex : 0);
   const current = list[active] ?? list[0];
 
   useEffect(() => {
