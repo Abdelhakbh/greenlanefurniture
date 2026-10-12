@@ -1,14 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Menu, ShoppingBag } from "lucide-react";
 import { useCart } from "./cart-context";
+import { Logo } from "./logo";
 import type { StoreCollection } from "@/lib/catalog";
 import { isVisibleCollection } from "@/lib/collection-covers";
-
-const LOGO =
-  "https://greenlanefurniture.co.uk/cdn/shop/files/green-lane-furniture-logo-v2.png?v=1789751439&width=440";
 
 export function Navbar({ categories }: { categories: StoreCollection[] }) {
   const { count, setOpen } = useCart();
@@ -24,15 +21,8 @@ export function Navbar({ categories }: { categories: StoreCollection[] }) {
         >
           <Menu className="size-6" />
         </button>
-        <Link href="/" className="flex shrink-0 items-center">
-          <Image
-            src={LOGO}
-            alt="Green Lane Furniture"
-            width={180}
-            height={48}
-            className="h-10 w-auto object-contain"
-            priority
-          />
+        <Link href="/" aria-label="Green Lane Furniture home" className="flex shrink-0 items-center">
+          <Logo />
         </Link>
         <div className="mx-auto hidden items-center gap-5 lg:flex">
           <Link
