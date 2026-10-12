@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
     root: projectRoot,
   },
   images: {
+    // Vercel's image optimisation quota is exhausted (402); serve originals directly.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
