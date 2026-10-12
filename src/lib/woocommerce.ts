@@ -76,17 +76,25 @@ async function wooList<T>(path: string): Promise<T[]> {
   return wooFetch<T[]>(path, 0, true);
 }
 
-async function wooListAllPages<T>(path: string): Promise<T[]> {
+async function wooListAllPages<T>(path: string, perPage = 100): Promise<T[]> {
   const all: T[] = [];
   const sep = path.includes("?") ? "&" : "?";
-  for (let page = 1; page < 30; page++) {
-    const batch = await wooList<T>(`${path}${sep}per_page=100&page=${page}`);
+  for (let page = 1; page < 60; page++) {
+    const batch = await wooList<T>(`${path}${sep}per_page=${perPage}&page=${page}`);
     if (!batch.length) break;
     all.push(...batch);
-    if (batch.length < 100) break;
+    if (batch.length < perPage) break;
   }
   return all;
 }
+
+/**
+ * Listing fields only (no descriptions). Next's data cache rejects responses over 2MB,
+ * which silently pins an old, shorter product list.
+ */
+const LIST_QUERY =
+  "status=publish&_fields=id,name,slug,type,status,regular_price,sale_price,price,on_sale,stock_status,images,categories,tags,attributes,variations";
+const LIST_PAGE_SIZE = 50;
 
 function variantFromSimple(p: WooProduct): StoreVariant {
   const price = p.price || p.regular_price || "0";
@@ -226,7 +234,7 @@ export function toProductCard(p: StoreProduct): ProductCard {
 
 export async function getAllProducts(): Promise<StoreProduct[]> {
   try {
-    const all = await wooListAllPages<WooProduct>("/products?status=publish");
+    const all = await wooListAllPages<WooProduct>(`/products?${LIST_QUERY}`, LIST_PAGE_SIZE);
     const mapped = await Promise.all(all.map((p) => mapWooProduct(p, false)));
     return mapped.filter((p) => p.title && p.handle);
   } catch (e) {
@@ -282,7 +290,8 @@ export async function getCollectionProducts(handle: string) {
   const cat = cats[0];
   if (!cat) return [];
   const products = await wooListAllPages<WooProduct>(
-    `/products?category=${cat.id}&status=publish`,
+    `/products?category=${cat.id}&${LIST_QUERY}`,
+    LIST_PAGE_SIZE,
   );
   return Promise.all(products.map((p) => mapWooProduct(p, false)));
 }

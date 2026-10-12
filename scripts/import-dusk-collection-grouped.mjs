@@ -150,6 +150,8 @@ async function woo(method, p, body, search = {}) {
     if (res.ok) return text ? JSON.parse(text) : null;
     lastErr = new Error(`${method} ${p} ${res.status}: ${text.slice(0, 400)}`);
     if (res.status && res.status < 500 && res.status !== 429) throw lastErr;
+    // A failed POST may still have created the resource; retrying would duplicate it.
+    if (method === "POST" && res.status !== 429) throw lastErr;
     await sleep(2000 * attempt);
   }
   throw lastErr;
