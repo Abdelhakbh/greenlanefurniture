@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { AddToCart } from "@/components/add-to-cart";
 
@@ -36,6 +36,24 @@ import { site } from "@/lib/site";
 export const revalidate = 600;
 
 export const dynamicParams = true;
+
+/** Old per-colour URLs like `/product/<model>-<colour>` → `/product/<model>?colour=<colour>`. */
+async function findColourParent(handle: string): Promise<string | null> {
+  const parts = handle.split("-");
+  for (let cut = 1; cut <= Math.min(4, parts.length - 1); cut++) {
+    const parentHandle = parts.slice(0, -cut).join("-");
+    const colour = parts.slice(-cut).join("-");
+    try {
+      const parent = await getProduct(parentHandle);
+      if (parent.variants.some((v) => variantSlug(v) === colour)) {
+        return `/product/${parentHandle}?colour=${colour}`;
+      }
+    } catch {
+      // not a product; try a shorter prefix
+    }
+  }
+  return null;
+}
 
 
 
@@ -95,6 +113,8 @@ export default async function ProductPage({
 
   } catch {
 
+    const target = await findColourParent(handle);
+    if (target) permanentRedirect(target);
     notFound();
 
   }
