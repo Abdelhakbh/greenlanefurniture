@@ -16,6 +16,9 @@ export function Footer({ collections = [] }: FooterProps) {
       <div className="mx-auto grid max-w-[1240px] gap-10 px-[clamp(1rem,4vw,3rem)] py-[clamp(2.5rem,5vw,3.75rem)] sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]">
         <div>
           <p className="font-display text-xl font-medium">Green Lane Furniture</p>
+          <p className="mt-1 text-sm font-semibold uppercase tracking-[0.12em] text-bone/80">
+            by {site.logoByline}
+          </p>
           <p className="mt-4 max-w-[36ch] text-sm opacity-80">{site.subhead}</p>
           <address className="not-italic mt-5 text-sm leading-relaxed opacity-80">
             <strong className="font-medium opacity-100">{site.legalName}</strong>

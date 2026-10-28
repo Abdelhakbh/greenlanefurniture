@@ -11,6 +11,8 @@ export const site = {
   email: "contact@greenlanefurniture.co.uk",
   phone: "+44 7414 892530",
   legalName: "GREEN LANE FURNITURE LTD",
+  /** Shown under the logo (e.g. “by SG 1987 LTD”). */
+  logoByline: "SG 1987 LTD",
   companyNumber: "15612430",
   address: {
     line: "510-512 Green Lane",

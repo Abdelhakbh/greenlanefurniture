@@ -6,10 +6,20 @@ import { useCart } from "./cart-context";
 import { Logo } from "./logo";
 import type { StoreCollection } from "@/lib/catalog";
 import { isVisibleCollection } from "@/lib/collection-covers";
+import { site } from "@/lib/site";
 
 export function Navbar({ categories }: { categories: StoreCollection[] }) {
   const { count, setOpen } = useCart();
-  const navCats = categories.filter(isVisibleCollection).slice(0, 5);
+  const visible = categories.filter(isVisibleCollection);
+  const top = visible.filter((c) => !c.parentId);
+  const extraHandles = ["ottoman-beds", "mattresses", "love-seats"];
+  const extras = extraHandles
+    .map((handle) => visible.find((c) => c.handle === handle))
+    .filter((c): c is NonNullable<typeof c> => Boolean(c));
+  const navCats = [
+    ...top,
+    ...extras.filter((c) => !top.some((item) => item.id === c.id)),
+  ].slice(0, 5);
 
   return (
     <header className="sticky top-0 z-40 border-b border-foreground/10 bg-background/90 backdrop-blur-md">
@@ -21,7 +31,11 @@ export function Navbar({ categories }: { categories: StoreCollection[] }) {
         >
           <Menu className="size-6" />
         </button>
-        <Link href="/" aria-label="Green Lane Furniture home" className="flex shrink-0 items-center">
+        <Link
+          href="/"
+          aria-label={`Green Lane Furniture by ${site.logoByline} home`}
+          className="flex shrink-0 items-center"
+        >
           <Logo />
         </Link>
         <div className="mx-auto hidden items-center gap-5 lg:flex">

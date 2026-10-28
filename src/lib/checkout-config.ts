@@ -1,10 +1,23 @@
 export const checkoutConfig = {
   shippingAmount: 0,
+  /** Courtesy discount when paying by bank transfer during card processor downtime. */
+  bankTransferDiscountPercent: 8,
+  bankAccountName: "SG 1987 LTD",
+  bankSortCode: "18-50-08",
+  bankAccountNumber: "57637047",
+  bankName: "Citibank",
+  bankAddress:
+    "Canada Square, Canary Wharf London, E14 5LB United Kingdom",
+  bankIban: "GB80CITI18500857637047",
+  bankBic: "CITIGB2L",
 } as const;
 
-export type PaymentMethod = "card";
+export type PaymentMethod = "bank";
 
 export const PENDING_ORDER_KEY = "green-lane-order-pending";
+
+export const CARD_UNAVAILABLE_MESSAGE =
+  "Card payments aren't available right now. Please complete your order with bank transfer — your 8% discount is applied automatically.";
 
 export type PendingOrder = {
   ref: string;
@@ -12,7 +25,8 @@ export type PendingOrder = {
   total: number;
   subtotal: number;
   shipping: number;
-  stripePaymentIntentId?: string;
+  discountAmount: number;
+  discountPercent: number;
   wooOrderId?: number;
   wooOrderNumber?: string;
   lines: {
@@ -37,9 +51,16 @@ export function generateOrderRef() {
   return `GLF-${y}${m}${day}-${r}`;
 }
 
-export function computeOrderTotal(subtotal: number, shipping: number) {
-  const total = Math.round((subtotal + shipping) * 100) / 100;
-  return { total };
+export function computeBankTransferTotals(subtotal: number, shipping: number) {
+  const beforeDiscount = subtotal + shipping;
+  const discountAmount =
+    Math.round(
+      beforeDiscount *
+        (checkoutConfig.bankTransferDiscountPercent / 100) *
+        100,
+    ) / 100;
+  const total = Math.round((beforeDiscount - discountAmount) * 100) / 100;
+  return { beforeDiscount, discountAmount, total };
 }
 
 export function amountToPence(amount: number) {
