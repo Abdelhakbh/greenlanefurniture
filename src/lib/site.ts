@@ -1,3 +1,5 @@
+import { payee } from "@/lib/payee";
+
 export const site = {
   name: "Green Lane Furniture",
   tagline: "Sofas • Beds • A Brighter Home",
@@ -11,8 +13,8 @@ export const site = {
   email: "contact@greenlanefurniture.co.uk",
   phone: "+44 7414 892530",
   legalName: "GREEN LANE FURNITURE LTD",
-  /** Shown under the logo (e.g. “by SG 1987 LTD”). */
-  logoByline: "SG 1987 LTD",
+  /** Shown under the logo — same as bank transfer beneficiary. */
+  logoByline: payee.name,
   companyNumber: "15612430",
   address: {
     line: "510-512 Green Lane",

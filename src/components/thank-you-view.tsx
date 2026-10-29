@@ -9,6 +9,7 @@ import {
   PENDING_ORDER_KEY,
   type PendingOrder,
 } from "@/lib/checkout-config";
+import { BankTransferDetails } from "@/components/bank-transfer-details";
 import { formatPrice } from "@/lib/format";
 import { site } from "@/lib/site";
 
@@ -73,23 +74,7 @@ export function ThankYouView() {
             Use this order number as the payment reference.
           </p>
 
-          <div className="mt-6 grid gap-3">
-            <Detail
-              label="Account name"
-              value={checkoutConfig.bankAccountName}
-            />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Detail label="Sort code" value={checkoutConfig.bankSortCode} />
-              <Detail
-                label="Account number"
-                value={checkoutConfig.bankAccountNumber}
-              />
-            </div>
-            <Detail label="Bank" value={checkoutConfig.bankName} />
-            <Detail label="Bank address" value={checkoutConfig.bankAddress} />
-            <Detail label="IBAN" value={checkoutConfig.bankIban} />
-            <Detail label="SWIFT / BIC" value={checkoutConfig.bankBic} />
-          </div>
+          <BankTransferDetails />
         </div>
       </div>
 
@@ -125,22 +110,6 @@ export function ThankYouView() {
       >
         Continue shopping
       </Link>
-    </div>
-  );
-}
-
-function Detail({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-foreground/10 px-4 py-3">
-      <div className="min-w-0">
-        <p className="text-xs uppercase tracking-wide text-foreground/50">
-          {label}
-        </p>
-        <p className="mt-0.5 break-words text-lg font-semibold tabular-nums">
-          {value}
-        </p>
-      </div>
-      <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />
     </div>
   );
 }

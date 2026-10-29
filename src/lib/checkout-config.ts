@@ -1,15 +1,16 @@
+import { payee } from "@/lib/payee";
+
 export const checkoutConfig = {
   shippingAmount: 0,
   /** Courtesy discount when paying by bank transfer during card processor downtime. */
   bankTransferDiscountPercent: 8,
-  bankAccountName: "SG 1987 LTD",
-  bankSortCode: "18-50-08",
-  bankAccountNumber: "57637047",
-  bankName: "Citibank",
-  bankAddress:
-    "Canada Square, Canary Wharf London, E14 5LB United Kingdom",
-  bankIban: "GB80CITI18500857637047",
-  bankBic: "CITIGB2L",
+  bankAccountName: payee.name,
+  bankSortCode: payee.sortCode,
+  bankAccountNumber: payee.accountNumber,
+  bankName: payee.bankName,
+  bankAddress: payee.bankAddress,
+  bankIban: payee.iban,
+  bankBic: payee.bic,
 } as const;
 
 export type PaymentMethod = "bank";
