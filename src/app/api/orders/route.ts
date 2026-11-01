@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import type { PaymentMethod } from "@/lib/checkout-config";
-import { assertPaymentIntentSucceeded } from "@/lib/stripe-server";
+import { sendTelegramSaleNotification } from "@/lib/telegram-order-notify";
 import {
-  computeExpectedOrderTotalPence,
   createWooCommerceOrder,
+  getWooCommerceOrder,
   type CreateWooOrderLine,
 } from "@/lib/woocommerce-order";
 
@@ -13,7 +13,6 @@ type OrderBody = {
   shipping: number;
   lines: CreateWooOrderLine[];
   billing: Record<string, string>;
-  paymentIntentId?: string;
 };
 
 function bad(message: string, status = 400) {
@@ -29,11 +28,8 @@ export async function POST(req: Request) {
   }
 
   if (!body.ref?.trim()) return bad("Missing order reference.");
-  if (body.method !== "card") {
+  if (body.method !== "bank") {
     return bad("Invalid payment method.");
-  }
-  if (!body.paymentIntentId?.trim()) {
-    return bad("Missing payment confirmation.");
   }
   if (!Array.isArray(body.lines) || !body.lines.length) {
     return bad("Your bag is empty.");
@@ -77,29 +73,18 @@ export async function POST(req: Request) {
         }
       : undefined;
 
-  const shippingTotal = Number(body.shipping) || 0;
-
   try {
-    const expectedPence = await computeExpectedOrderTotalPence(
-      body.lines,
-      shippingTotal,
-    );
-    await assertPaymentIntentSucceeded(
-      body.paymentIntentId.trim(),
-      expectedPence,
-      body.ref.trim(),
-    );
-
     const result = await createWooCommerceOrder({
       ref: body.ref.trim(),
       method: body.method,
-      shippingTotal,
+      shippingTotal: Number(body.shipping) || 0,
       lines: body.lines,
       billing: {
         first_name,
         last_name,
         email,
         phone: b.phone?.trim(),
+        company: b.company?.trim(),
         address1,
         city,
         postcode,
@@ -107,8 +92,17 @@ export async function POST(req: Request) {
       },
       shipping,
       customerNote: b.notes?.trim(),
-      stripePaymentIntentId: body.paymentIntentId.trim(),
     });
+
+    try {
+      const order = await getWooCommerceOrder(result.wooOrderId);
+      await sendTelegramSaleNotification(order);
+    } catch (notifyErr) {
+      console.error(
+        "[api/orders] Telegram notify failed:",
+        notifyErr instanceof Error ? notifyErr.message : notifyErr,
+      );
+    }
 
     return NextResponse.json(result);
   } catch (e) {
@@ -118,7 +112,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "We could not complete your order. If you were charged, contact us with your payment reference.",
+          "We could not save your order. Please try again or contact us by phone.",
         detail: process.env.NODE_ENV === "development" ? message : undefined,
       },
       { status: 502 },

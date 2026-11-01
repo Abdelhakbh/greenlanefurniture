@@ -1,9 +1,42 @@
-import { amountToPence, type PaymentMethod } from "./checkout-config";
+import {
+  amountToPence,
+  checkoutConfig,
+  computeBankTransferTotals,
+  type PaymentMethod,
+} from "./checkout-config";
 
 type WooOrderResponse = {
   id: number;
   number: string;
   order_key: string;
+};
+
+export type WooOrderDetail = {
+  id: number;
+  number: string;
+  status: string;
+  total: string;
+  payment_method_title: string;
+  billing: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+    company: string;
+    address_1: string;
+    city: string;
+    postcode: string;
+    country: string;
+  };
+  shipping: {
+    first_name: string;
+    last_name: string;
+    address_1: string;
+    city: string;
+    postcode: string;
+    country: string;
+  };
+  line_items: { name: string; quantity: number; total: string }[];
 };
 
 type WooPriceRow = { price: string; regular_price: string };
@@ -128,6 +161,7 @@ export type CreateWooOrderInput = {
     last_name: string;
     email: string;
     phone?: string;
+    company?: string;
     address1: string;
     city: string;
     postcode: string;
@@ -140,15 +174,14 @@ export type CreateWooOrderInput = {
     country: string;
   };
   customerNote?: string;
-  stripePaymentIntentId?: string;
 };
 
 function paymentForMethod(_method: PaymentMethod) {
   return {
-    payment_method: "stripe",
-    payment_method_title: "Card (Stripe)",
-    set_paid: true,
-    status: "processing" as const,
+    payment_method: "bacs",
+    payment_method_title: "Bank transfer",
+    set_paid: false,
+    status: "on-hold" as const,
   };
 }
 
@@ -160,6 +193,7 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
     last_name: input.billing.last_name,
     email: input.billing.email,
     phone: input.billing.phone ?? "",
+    company: input.billing.company ?? "",
     address_1: input.billing.address1,
     city: input.billing.city,
     postcode: input.billing.postcode,
@@ -210,14 +244,19 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
         ]
       : [];
 
-  const paymentNote = input.stripePaymentIntentId
-    ? `Payment: Card (Stripe). PaymentIntent ID: ${input.stripePaymentIntentId}`
-    : "Payment: Card (Stripe)";
+  const catalogTotal =
+    (await computeExpectedOrderTotalPence(input.lines, input.shippingTotal)) /
+    100;
+  const { discountAmount, total } = computeBankTransferTotals(
+    catalogTotal,
+    0,
+  );
+
+  const paymentNote = `Payment: Bank transfer (awaiting). Amount due after ${checkoutConfig.bankTransferDiscountPercent}% discount: £${total.toFixed(2)}`;
 
   const noteParts = [
     input.customerNote?.trim(),
-    `Storefront reference: ${input.ref}`,
-    paymentNote,
+    `${paymentNote} The customer was asked to use the order number as the payment reference.`,
   ].filter(Boolean);
 
   const payload = {
@@ -230,18 +269,22 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
     shipping: shipTo,
     line_items,
     ...(shipping_lines.length ? { shipping_lines } : {}),
+    ...(discountAmount > 0
+      ? {
+          fee_lines: [
+            {
+              name: `Bank transfer discount (${checkoutConfig.bankTransferDiscountPercent}%)`,
+              total: (-discountAmount).toFixed(2),
+            },
+          ],
+        }
+      : {}),
     meta_data: [
       { key: "_glf_order_ref", value: input.ref },
       { key: "_glf_payment_method", value: input.method },
       { key: "_created_via", value: "greenlanefurniture-headless" },
-      ...(input.stripePaymentIntentId
-        ? [
-            {
-              key: "_stripe_payment_intent_id",
-              value: input.stripePaymentIntentId,
-            },
-          ]
-        : []),
+      { key: "_glf_bank_discount", value: discountAmount.toFixed(2) },
+      { key: "_glf_amount_due", value: total.toFixed(2) },
     ],
   };
 
@@ -250,5 +293,11 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
     wooOrderId: order.id,
     wooOrderNumber: order.number,
     wooOrderKey: order.order_key,
+    discountAmount,
+    amountDue: total,
   };
+}
+
+export async function getWooCommerceOrder(orderId: number) {
+  return wooFetch<WooOrderDetail>(`/orders/${orderId}`);
 }
