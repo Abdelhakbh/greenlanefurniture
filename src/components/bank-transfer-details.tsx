@@ -20,12 +20,12 @@ export function BankTransferDetails({ compact }: { compact?: boolean }) {
         <Row label="Account number" value={payee.accountNumber} />
       </div>
       <Row label="Bank" value={payee.bankName} />
-      {!compact && (
-        <>
-          <Row label="Bank address" value={payee.bankAddress} />
-          <Row label="IBAN" value={payee.iban} />
-        </>
-      )}
+      {!compact && payee.bankAddress ? (
+        <Row label="Bank address" value={payee.bankAddress} />
+      ) : null}
+      {!compact && payee.iban ? (
+        <Row label="IBAN" value={payee.iban} />
+      ) : null}
       <Row label="SWIFT / BIC" value={payee.bic} />
     </div>
   );
