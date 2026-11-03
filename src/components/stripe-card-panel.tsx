@@ -1,46 +1,34 @@
 "use client";
 
-import {
-  PaymentElement,
-  Elements,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js";
-import { loadStripe, type StripeElementsOptions } from "@stripe/stripe-js";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import { getStripePublishableKey } from "@/lib/stripe";
-
-export type StripeBillingDetails = {
-  name: string;
-  email: string;
-  phone?: string;
-  address: {
-    line1: string;
-    city: string;
-    postal_code: string;
-    country: string;
-  };
+type StripePaymentSectionProps = {
+  onCardAttempt: () => void;
+  cardNotice?: string;
 };
 
-type StripeCheckoutProps = {
-  orderRef: string;
-  lines: { productId: number; variantId: number; qty: number }[];
-  shipping: number;
-  getBilling: () => StripeBillingDetails | null;
-  onPayStart?: () => void;
-  onSuccess: (paymentIntentId: string) => void;
-  onError: (message: string) => void;
-  disabled?: boolean;
-  submitLabel?: string;
-};
+function CardBrandDots() {
+  return (
+    <>
+      <span className="h-[14px] w-[22px] rounded-[2px] bg-[#1a1f71]" title="Visa" />
+      <span className="h-[14px] w-[22px] rounded-[2px] bg-[#eb001b]" title="Mastercard" />
+      <span className="h-[14px] w-[22px] rounded-[2px] bg-[#006fcf]" title="Amex" />
+    </>
+  );
+}
 
-const stripePromise = (() => {
-  const pk = getStripePublishableKey();
-  return pk ? loadStripe(pk) : null;
-})();
+function LockIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M6 1a2 2 0 00-2 2v1H3a1 1 0 00-1 1v5a1 1 0 001 1h6a1 1 0 001-1V5a1 1 0 00-1-1H8V3a2 2 0 00-2-2zm1 3V3a1 1 0 10-2 0v1h2z"
+      />
+    </svg>
+  );
+}
 
-function PoweredByStripe() {
+export function PoweredByStripe() {
   return (
     <span className="inline-flex items-center gap-1 text-[11px] text-[#697386]">
       <span>Powered by</span>
@@ -55,241 +43,101 @@ function PoweredByStripe() {
   );
 }
 
-function PaymentForm({
-  getBilling,
-  onPayStart,
-  onSuccess,
-  onError,
-  disabled,
-  submitLabel,
-}: {
-  getBilling: () => StripeBillingDetails | null;
-  onPayStart?: () => void;
-  onSuccess: (paymentIntentId: string) => void;
-  onError: (message: string) => void;
-  disabled?: boolean;
-  submitLabel?: string;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-
-  async function handlePay(e: React.FormEvent) {
-    e.preventDefault();
-    if (!stripe || !elements) {
-      onError("Payment is still loading. Please wait a moment.");
-      return;
-    }
-
-    const billing = getBilling();
-    if (!billing) {
-      onError(
-        "Please complete all required fields and accept the terms before paying.",
-      );
-      return;
-    }
-
-    onPayStart?.();
-
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        receipt_email: billing.email,
-        payment_method_data: {
-          billing_details: {
-            name: billing.name,
-            email: billing.email,
-            phone: billing.phone,
-            address: billing.address,
-          },
-        },
-        return_url: `${window.location.origin}/checkout/thank-you`,
-      },
-      redirect: "if_required",
-    });
-
-    if (error) {
-      onError(error.message ?? "Your card could not be processed.");
-      return;
-    }
-
-    if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
-      onSuccess(paymentIntent.id);
-      return;
-    }
-
-    onError("Payment was not completed. Please try again.");
-  }
-
+function StripeFooter() {
   return (
-    <form onSubmit={handlePay} className="space-y-4">
-      <PaymentElement options={{ layout: "tabs" }} />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-[11px] text-[#697386]">
-          Secure payment
-        </span>
-        <PoweredByStripe />
-      </div>
-      <button
-        type="submit"
-        disabled={disabled || !stripe || !elements}
-        className="w-full rounded-md bg-pine py-3.5 text-sm font-semibold text-bone hover:brightness-95 disabled:opacity-60"
-      >
-        {disabled ? "Processing…" : (submitLabel ?? "Pay securely")}
-      </button>
-    </form>
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+      <span className="inline-flex items-center gap-1.5 text-[11px] text-[#697386]">
+        <LockIcon />
+        Secure payment
+      </span>
+      <PoweredByStripe />
+    </div>
   );
 }
 
-function StripeElementsCheckout({
-  clientSecret,
-  getBilling,
-  onPayStart,
-  onSuccess,
-  onError,
-  disabled,
-  submitLabel,
-}: {
-  clientSecret: string;
-  getBilling: () => StripeBillingDetails | null;
-  onPayStart?: () => void;
-  onSuccess: (paymentIntentId: string) => void;
-  onError: (message: string) => void;
-  disabled?: boolean;
-  submitLabel?: string;
-}) {
-  const options: StripeElementsOptions = useMemo(
-    () => ({
-      clientSecret,
-      appearance: {
-        theme: "stripe",
-        variables: {
-          colorPrimary: "#2d5a47",
-          borderRadius: "4px",
-        },
-      },
-    }),
-    [clientSecret],
-  );
-
-  return (
-    <Elements stripe={stripePromise} options={options}>
-      <PaymentForm
-        getBilling={getBilling}
-        onPayStart={onPayStart}
-        onSuccess={onSuccess}
-        onError={onError}
-        disabled={disabled}
-        submitLabel={submitLabel}
-      />
-    </Elements>
-  );
-}
-
+/** Stripe-style card UI (display only — cards not accepted). */
 export function StripePaymentSection({
-  orderRef,
-  lines,
-  shipping,
-  getBilling,
-  onPayStart,
-  onSuccess,
-  onError,
-  disabled,
-  submitLabel,
-}: StripeCheckoutProps) {
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [loadingIntent, setLoadingIntent] = useState(true);
-  const [intentError, setIntentError] = useState("");
-
-  const linesKey = lines.map((l) => `${l.variantId}:${l.qty}`).join("|");
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoadingIntent(true);
-    setIntentError("");
-    setClientSecret(null);
-
-    fetch("/api/stripe/create-payment-intent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref: orderRef, lines, shipping }),
-    })
-      .then(async (res) => {
-        const data = (await res.json()) as {
-          clientSecret?: string;
-          error?: string;
-        };
-        if (!res.ok) {
-          throw new Error(data.error ?? "Could not start payment.");
-        }
-        if (!data.clientSecret) {
-          throw new Error("Could not start payment.");
-        }
-        if (!cancelled) setClientSecret(data.clientSecret);
-      })
-      .catch((err: Error) => {
-        if (!cancelled) {
-          setIntentError(err.message ?? "Could not start payment.");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingIntent(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [orderRef, linesKey, shipping]);
-
-  if (!stripePromise) {
-    return (
-      <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-        Card payments are not configured yet. Add{" "}
-        <code className="text-xs">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> and{" "}
-        <code className="text-xs">STRIPE_SECRET_KEY</code> on the server.
-      </p>
-    );
-  }
+  onCardAttempt,
+  cardNotice,
+}: StripePaymentSectionProps) {
+  const blockAttempt = () => onCardAttempt();
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[#e6e6e6] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.03)]">
+    <div className="relative overflow-hidden rounded-lg border border-[#e6e6e6] bg-white text-[#30313d] opacity-[0.92] shadow-[0_1px_1px_rgba(0,0,0,0.03)]">
       <div className="flex items-center justify-between border-b border-[#e6e6e6] bg-[#fafafa] px-4 py-3.5">
         <div className="flex items-center gap-3">
           <span
-            className="size-[18px] shrink-0 rounded-full border-[5px] border-[#0570de] bg-white"
+            className="size-[18px] shrink-0 rounded-full border-2 border-[#c7ccd1] bg-white"
             aria-hidden
           />
-          <span className="text-sm font-medium">Card</span>
+          <span className="text-sm font-medium text-[#697386]">Card</span>
+          <span className="rounded bg-[#f0f0f0] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#697386]">
+            Unavailable
+          </span>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/card-brands.svg"
-          alt="American Express, Discover, Visa, Mastercard"
-          width={168}
-          height={26}
-          className="h-[26px] max-w-[168px] w-auto shrink-0 object-contain object-right"
-          decoding="async"
-        />
+        <div className="flex items-center gap-1.5 opacity-50">
+          <CardBrandDots />
+        </div>
       </div>
-      <div className="p-4">
-        {loadingIntent && (
-          <p className="text-sm text-foreground/60">Loading secure payment…</p>
-        )}
-        {intentError && (
-          <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
-            {intentError}
+
+      <div className="pointer-events-auto bg-white p-4">
+        <div
+          className="overflow-hidden rounded-[5px] border border-[#e6e6e6] bg-[#fafbfc]"
+          onFocusCapture={blockAttempt}
+          onClick={blockAttempt}
+          role="group"
+          aria-label="Card payment unavailable"
+        >
+          <div className="relative border-b border-[#e6e6e6] px-3 py-3">
+            <input
+              type="text"
+              readOnly
+              tabIndex={0}
+              placeholder="1234 1234 1234 1234"
+              className="w-full cursor-not-allowed border-0 bg-transparent text-base text-[#697386] outline-none placeholder:text-[#aab7c4]"
+              aria-label="Card number"
+              onFocus={blockAttempt}
+            />
+            <div className="pointer-events-none absolute top-1/2 right-3 flex -translate-y-1/2 gap-1 opacity-40">
+              <CardBrandDots />
+            </div>
+          </div>
+          <div className="grid grid-cols-2">
+            <div className="border-r border-[#e6e6e6] px-3 py-3">
+              <input
+                type="text"
+                readOnly
+                tabIndex={0}
+                placeholder="MM / YY"
+                className="w-full cursor-not-allowed border-0 bg-transparent text-base text-[#697386] outline-none placeholder:text-[#aab7c4]"
+                aria-label="Expiry"
+                onFocus={blockAttempt}
+              />
+            </div>
+            <div className="px-3 py-3">
+              <input
+                type="text"
+                readOnly
+                tabIndex={0}
+                placeholder="CVC"
+                className="w-full cursor-not-allowed border-0 bg-transparent text-base text-[#697386] outline-none placeholder:text-[#aab7c4]"
+                aria-label="CVC"
+                onFocus={blockAttempt}
+              />
+            </div>
+          </div>
+        </div>
+
+        {cardNotice && (
+          <p
+            className="mt-3 rounded-md border border-[#df1b41]/25 bg-[#fef2f4] px-3 py-2 text-sm text-[#df1b41]"
+            role="alert"
+          >
+            {cardNotice}
           </p>
         )}
-        {clientSecret && !intentError && (
-          <StripeElementsCheckout
-            clientSecret={clientSecret}
-            getBilling={getBilling}
-            onPayStart={onPayStart}
-            onSuccess={onSuccess}
-            onError={onError}
-            disabled={disabled}
-            submitLabel={submitLabel}
-          />
-        )}
+
+        <StripeFooter />
       </div>
     </div>
   );

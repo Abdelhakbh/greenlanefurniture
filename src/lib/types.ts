@@ -31,6 +31,8 @@ export type StoreCollection = {
   description: string;
   image: { src: string } | null;
   products_count: number;
+  /** Woo parent category. 0 for top-level collections. */
+  parentId?: number;
 };
 
 export type ProductCard = {
