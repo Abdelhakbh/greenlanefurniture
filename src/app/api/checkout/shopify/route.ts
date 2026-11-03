@@ -13,7 +13,7 @@ const ALLOWED_ORIGINS = new Set([
   "http://localhost:3000",
 ]);
 
-function corsHeaders(origin: string | null) {
+function corsHeaders(origin: string | null): Record<string, string> {
   if (!origin || !ALLOWED_ORIGINS.has(origin)) return {};
   return {
     "Access-Control-Allow-Origin": origin,
