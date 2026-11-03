@@ -28,12 +28,28 @@ export type CheckoutCartLine = {
 const cache = new Map<string, { at: number; product: ShopifyProduct | null }>();
 const CACHE_MS = 10 * 60 * 1000;
 
-function shopHost() {
+function normalizeShopHost(raw: string) {
+  const trimmed = raw.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return trimmed.includes(".") ? trimmed : `${trimmed}.myshopify.com`;
+}
+
+/** Admin API + OAuth — always the *.myshopify.com host. */
+function adminShopHost() {
   const raw =
     process.env.SHOPIFY_STORE_DOMAIN ||
     process.env.SHOPIFY_STORE ||
     "uwmdi7-eh.myshopify.com";
-  return raw.includes(".") ? raw : `${raw}.myshopify.com`;
+  const host = normalizeShopHost(raw);
+  if (host.endsWith(".myshopify.com")) return host;
+  const slug = host.split(".")[0];
+  return `${slug}.myshopify.com`;
+}
+
+/** Public cart/checkout URLs — custom subdomain when connected in Shopify (e.g. checkout.example.com). */
+function checkoutShopHost() {
+  const checkout = process.env.SHOPIFY_CHECKOUT_DOMAIN?.trim();
+  if (checkout) return normalizeShopHost(checkout);
+  return adminShopHost();
 }
 
 let token: string | null = null;
@@ -52,7 +68,7 @@ async function getAccessToken() {
   if (!clientId || !clientSecret) {
     throw new Error("Shopify API credentials are not configured");
   }
-  const res = await fetch(`https://${shopHost()}/admin/oauth/access_token`, {
+  const res = await fetch(`https://${adminShopHost()}/admin/oauth/access_token`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -69,7 +85,7 @@ async function getAccessToken() {
 }
 
 async function adminGet<T>(path: string): Promise<T> {
-  const res = await fetch(`https://${shopHost()}/admin/api/2025-01${path}`, {
+  const res = await fetch(`https://${adminShopHost()}/admin/api/2025-01${path}`, {
     headers: { "X-Shopify-Access-Token": await getAccessToken() },
     next: { revalidate: 0 },
   });
@@ -155,7 +171,7 @@ function pickVariant(product: ShopifyProduct, attributes?: Record<string, string
 }
 
 export function shopifyCartCheckoutUrl(items: { variantId: number; qty: number }[]) {
-  const host = shopHost();
+  const host = checkoutShopHost();
   if (!items.length) return `https://${host}/cart`;
   const merged = new Map<number, number>();
   for (const { variantId, qty } of items) {
