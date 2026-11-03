@@ -3,12 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, X } from "lucide-react";
+import { useState } from "react";
 import { useCart } from "./cart-context";
 import { formatPrice } from "@/lib/format";
+import { startShopifyCheckout } from "@/lib/start-shopify-checkout";
+import { useShopifyCheckoutUi } from "@/lib/shopify-checkout-public";
 
 export function CartSheet() {
   const { lines, open, setOpen, setQty, remove, checkoutUrl, count } =
     useCart();
+  const shopifyCheckout = useShopifyCheckoutUi();
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState("");
 
   if (!open) return null;
 
@@ -109,19 +115,57 @@ export function CartSheet() {
               {formatPrice(subtotal)}
             </span>
           </div>
-          <a
-            href={checkoutUrl}
-            className={`block w-full rounded-md py-3 text-center text-sm font-semibold ${
-              lines.length
-                ? "bg-pine text-bone hover:brightness-105"
-                : "pointer-events-none bg-foreground/20 text-foreground/50"
-            }`}
-          >
-            Go to checkout
-          </a>
+          {shopifyCheckout ? (
+            <button
+              type="button"
+              disabled={!lines.length || paying}
+              onClick={async () => {
+                setPayError("");
+                setPaying(true);
+                try {
+                  await startShopifyCheckout(
+                    lines.map((l) => ({
+                      handle: l.handle,
+                      qty: l.qty,
+                      attributes: l.attributes,
+                      title: l.title,
+                    })),
+                  );
+                } catch (e) {
+                  setPayError(
+                    e instanceof Error ? e.message : "Checkout unavailable.",
+                  );
+                  setPaying(false);
+                }
+              }}
+              className={`block w-full rounded-md py-3 text-center text-sm font-semibold ${
+                lines.length
+                  ? "bg-pine text-bone hover:brightness-105 disabled:opacity-70"
+                  : "pointer-events-none bg-foreground/20 text-foreground/50"
+              }`}
+            >
+              {paying ? "Redirecting…" : "Pay securely — card & Shop Pay"}
+            </button>
+          ) : (
+            <a
+              href={checkoutUrl}
+              className={`block w-full rounded-md py-3 text-center text-sm font-semibold ${
+                lines.length
+                  ? "bg-pine text-bone hover:brightness-105"
+                  : "pointer-events-none bg-foreground/20 text-foreground/50"
+              }`}
+            >
+              Go to checkout
+            </a>
+          )}
           <p className="mt-2 text-center text-xs text-foreground/55">
-            Secure card payment at checkout
+            {shopifyCheckout
+              ? "Checkout on Shopify — no WordPress payment page"
+              : "Pay by bank transfer — 8% off"}
           </p>
+          {payError && (
+            <p className="mt-2 text-center text-xs text-red-800">{payError}</p>
+          )}
         </div>
       </aside>
     </div>

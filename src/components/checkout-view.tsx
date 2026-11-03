@@ -8,8 +8,9 @@ import { useCart } from "@/components/cart-context";
 import { BankTransferDetails } from "@/components/bank-transfer-details";
 import { StripePaymentSection } from "@/components/stripe-card-panel";
 import { payee } from "@/lib/payee";
-import { shopifyCheckoutApiUrl } from "@/lib/shopify-checkout-api";
+import { ShopifyCheckoutRedirect } from "@/components/shopify-checkout-redirect";
 import { useShopifyCheckoutUi } from "@/lib/shopify-checkout-public";
+import { startShopifyCheckout } from "@/lib/start-shopify-checkout";
 import {
   CARD_UNAVAILABLE_MESSAGE,
   checkoutConfig,
@@ -50,6 +51,10 @@ export function CheckoutView() {
     );
   }
 
+  if (shopifyCheckout) {
+    return <ShopifyCheckoutRedirect lines={lines} />;
+  }
+
   function validate(form: HTMLFormElement) {
     let ok = true;
     form.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
@@ -76,27 +81,18 @@ export function CheckoutView() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch(shopifyCheckoutApiUrl(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lines: lines.map((l) => ({
-            handle: l.handle,
-            qty: l.qty,
-            attributes: l.attributes,
-            title: l.title,
-          })),
-        }),
-      });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
-        setSubmitError(data.error ?? "Could not start checkout. Please try again.");
-        setSubmitting(false);
-        return;
-      }
-      window.location.href = data.url;
-    } catch {
-      setSubmitError("Network error — please try again.");
+      await startShopifyCheckout(
+        lines.map((l) => ({
+          handle: l.handle,
+          qty: l.qty,
+          attributes: l.attributes,
+          title: l.title,
+        })),
+      );
+    } catch (e) {
+      setSubmitError(
+        e instanceof Error ? e.message : "Network error — please try again.",
+      );
       setSubmitting(false);
     }
   }
