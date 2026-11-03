@@ -124,7 +124,8 @@ export function shopifyCartCheckoutUrl(items: { variantId: number; qty: number }
     merged.set(variantId, (merged.get(variantId) ?? 0) + qty);
   }
   const line = [...merged.entries()].map(([id, q]) => `${id}:${q}`).join(",");
-  return `https://${host}/cart/${line}?checkout=1`;
+  // Flag must be `?checkout` (no value). `?checkout=1` breaks with "expected String to be a Hash".
+  return `https://${host}/cart/${line}?checkout`;
 }
 
 export async function resolveShopifyCheckoutLines(lines: CheckoutCartLine[]) {
