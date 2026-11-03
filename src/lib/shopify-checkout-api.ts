@@ -1,10 +1,6 @@
-/** Public checkout API base (Shopify credentials live on this host). */
-export const SHOPIFY_CHECKOUT_API_FALLBACK =
-  "https://greenlanefurniture-psi.vercel.app";
-
+/** Checkout API on the same site (production has Shopify credentials). */
 export function shopifyCheckoutApiUrl() {
-  const base =
-    process.env.NEXT_PUBLIC_SHOPIFY_CHECKOUT_API?.replace(/\/$/, "") ||
-    SHOPIFY_CHECKOUT_API_FALLBACK;
-  return `${base}/api/checkout/shopify`;
+  const base = process.env.NEXT_PUBLIC_SHOPIFY_CHECKOUT_API?.replace(/\/$/, "");
+  if (base) return `${base}/api/checkout/shopify`;
+  return "/api/checkout/shopify";
 }

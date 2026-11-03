@@ -90,30 +90,68 @@ async function getProductByHandle(handle: string): Promise<ShopifyProduct | null
   return product;
 }
 
-function variantMatches(
+function normOptionValue(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function normOptionName(name: string) {
+  return name.trim().toLowerCase().replace(/colour/g, "color");
+}
+
+function variantOptionValues(variant: ShopifyVariant) {
+  return [variant.option1, variant.option2, variant.option3]
+    .filter((v): v is string => Boolean(v && String(v).trim()))
+    .map((v) => normOptionValue(String(v)));
+}
+
+function variantMatchesByOptionNames(
   product: ShopifyProduct,
   variant: ShopifyVariant,
-  attributes?: Record<string, string>,
+  attributes: Record<string, string>,
 ) {
-  if (!attributes || !Object.keys(attributes).length) {
-    return product.variants.length === 1;
+  const attrByNorm = new Map<string, string>();
+  for (const [key, val] of Object.entries(attributes)) {
+    if (!val?.trim()) continue;
+    attrByNorm.set(normOptionName(key), normOptionValue(val));
   }
+  if (!attrByNorm.size) return false;
+
+  let compared = 0;
   for (let i = 0; i < product.options.length; i++) {
     const name = product.options[i]?.name;
     if (!name) continue;
-    const wanted = attributes[name];
+    const wanted = attrByNorm.get(normOptionName(name));
     if (!wanted) continue;
+    compared++;
     const actual = variant[`option${i + 1}` as keyof ShopifyVariant];
-    if (String(actual ?? "") !== String(wanted)) return false;
+    if (normOptionValue(String(actual ?? "")) !== wanted) return false;
   }
-  return true;
+  return compared > 0;
+}
+
+function variantMatchesByValues(variant: ShopifyVariant, attributes: Record<string, string>) {
+  const wanted = Object.values(attributes)
+    .filter((v) => v?.trim())
+    .map((v) => normOptionValue(v));
+  if (!wanted.length) return false;
+  const options = variantOptionValues(variant);
+  return wanted.every((w) => options.includes(w));
 }
 
 function pickVariant(product: ShopifyProduct, attributes?: Record<string, string>) {
   if (!product.variants.length) return null;
   if (product.variants.length === 1) return product.variants[0];
-  const match = product.variants.find((v) => variantMatches(product, v, attributes));
-  return match ?? null;
+
+  const attrs = attributes && Object.keys(attributes).length ? attributes : undefined;
+  if (!attrs) return null;
+
+  const byName = product.variants.find((v) =>
+    variantMatchesByOptionNames(product, v, attrs),
+  );
+  if (byName) return byName;
+
+  const byValues = product.variants.find((v) => variantMatchesByValues(v, attrs));
+  return byValues ?? null;
 }
 
 export function shopifyCartCheckoutUrl(items: { variantId: number; qty: number }[]) {
