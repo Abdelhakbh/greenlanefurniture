@@ -8,6 +8,7 @@ import { useCart } from "@/components/cart-context";
 import { BankTransferDetails } from "@/components/bank-transfer-details";
 import { StripePaymentSection } from "@/components/stripe-card-panel";
 import { payee } from "@/lib/payee";
+import { shopifyCheckoutApiUrl } from "@/lib/shopify-checkout-api";
 import { useShopifyCheckoutUi } from "@/lib/shopify-checkout-public";
 import {
   CARD_UNAVAILABLE_MESSAGE,
@@ -75,7 +76,7 @@ export function CheckoutView() {
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/checkout/shopify", {
+      const res = await fetch(shopifyCheckoutApiUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
