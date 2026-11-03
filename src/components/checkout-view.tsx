@@ -8,6 +8,7 @@ import { useCart } from "@/components/cart-context";
 import { BankTransferDetails } from "@/components/bank-transfer-details";
 import { StripePaymentSection } from "@/components/stripe-card-panel";
 import { payee } from "@/lib/payee";
+import { useShopifyCheckoutUi } from "@/lib/shopify-checkout-public";
 import {
   CARD_UNAVAILABLE_MESSAGE,
   checkoutConfig,
@@ -21,6 +22,7 @@ import { formatPrice } from "@/lib/format";
 export function CheckoutView() {
   const router = useRouter();
   const { lines } = useCart();
+  const shopifyCheckout = useShopifyCheckoutUi();
   const [shipDifferent, setShipDifferent] = useState(false);
   const [cardNotice, setCardNotice] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -60,6 +62,42 @@ export function CheckoutView() {
     const terms = form.querySelector<HTMLInputElement>("#terms");
     if (!terms?.checked) ok = false;
     return ok;
+  }
+
+  async function onShopifyPay(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSubmitError("");
+    const form = e.currentTarget;
+    const terms = form.querySelector<HTMLInputElement>("#terms");
+    if (!terms?.checked) {
+      setSubmitError("Please accept the terms and privacy policy.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/checkout/shopify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lines: lines.map((l) => ({
+            handle: l.handle,
+            qty: l.qty,
+            attributes: l.attributes,
+            title: l.title,
+          })),
+        }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        setSubmitError(data.error ?? "Could not start checkout. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setSubmitError("Network error — please try again.");
+      setSubmitting(false);
+    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -168,21 +206,36 @@ export function CheckoutView() {
 
   return (
     <div className="mx-auto max-w-[1180px] px-[clamp(1rem,4vw,2rem)] py-8 pb-16">
-      <div className="mb-8 rounded-lg border border-[#c4e8d4] bg-[#edf8f0] px-4 py-3.5 text-sm leading-relaxed text-[#1e4620]">
-        <p className="font-medium">
-          Pay by <strong>bank transfer</strong> and get{" "}
-          {checkoutConfig.bankTransferDiscountPercent}% off.
-        </p>
-        <p className="mt-1.5 text-[#2d5a34]">
-          Card payments are not available. The discount is already taken off
-          the total.
-        </p>
-      </div>
+      {shopifyCheckout ? (
+        <div className="mb-8 rounded-lg border border-foreground/10 bg-bone-dim px-4 py-3.5 text-sm leading-relaxed">
+          <p className="font-medium text-pine-deep">
+            Secure checkout on Shopify
+          </p>
+          <p className="mt-1.5 text-foreground/70">
+            You&apos;ll complete delivery details and payment on our secure
+            checkout page (Shop Pay, card, and other methods enabled there).
+            Product browsing stays on Green Lane Furniture — your Google Shopping
+            links are unchanged.
+          </p>
+        </div>
+      ) : (
+        <div className="mb-8 rounded-lg border border-[#c4e8d4] bg-[#edf8f0] px-4 py-3.5 text-sm leading-relaxed text-[#1e4620]">
+          <p className="font-medium">
+            Pay by <strong>bank transfer</strong> and get{" "}
+            {checkoutConfig.bankTransferDiscountPercent}% off.
+          </p>
+          <p className="mt-1.5 text-[#2d5a34]">
+            Card payments are not available. The discount is already taken off
+            the total.
+          </p>
+        </div>
+      )}
       <form
-        onSubmit={onSubmit}
+        onSubmit={shopifyCheckout ? onShopifyPay : onSubmit}
         className="grid items-start gap-10 lg:grid-cols-[1fr_minmax(380px,440px)]"
       >
         <div className="space-y-8">
+          {!shopifyCheckout && (
           <section>
             <h2 className="mb-4 font-display text-xl font-medium">
               Billing details
@@ -241,7 +294,28 @@ export function CheckoutView() {
               />
             </div>
           </section>
+          )}
 
+          {shopifyCheckout ? (
+            <section className="rounded-lg border border-foreground/10 bg-white p-6 text-sm text-foreground/75">
+              <h2 className="mb-3 font-display text-xl font-medium text-foreground">
+                Before you continue
+              </h2>
+              <ul className="list-inside list-disc space-y-2">
+                <li>Delivery address and phone are collected on the next step.</li>
+                <li>
+                  Shipping and any taxes are calculated at checkout to match your
+                  postcode.
+                </li>
+                <li>Order confirmation is emailed from Shopify after payment.</li>
+              </ul>
+              {submitError && (
+                <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">
+                  {submitError}
+                </p>
+              )}
+            </section>
+          ) : (
           <section>
             <h2 className="mb-4 font-display text-xl font-medium">Payment</h2>
             <div className="mb-4 overflow-hidden rounded-lg border-2 border-[#0570de] bg-white shadow-sm">
@@ -279,6 +353,7 @@ export function CheckoutView() {
               </p>
             )}
           </section>
+          )}
         </div>
 
         <aside className="rounded-sm border border-foreground/10 bg-white p-6 lg:sticky lg:top-24">
@@ -321,17 +396,27 @@ export function CheckoutView() {
                 {shipping === 0 ? "Free" : formatPrice(shipping)}
               </span>
             </div>
-            <div className="flex justify-between text-lane-green">
-              <span>
-                Bank transfer discount (
-                {checkoutConfig.bankTransferDiscountPercent}%)
-              </span>
-              <span className="tabular-nums">−{formatPrice(discountAmount)}</span>
-            </div>
+            {!shopifyCheckout && (
+              <div className="flex justify-between text-lane-green">
+                <span>
+                  Bank transfer discount (
+                  {checkoutConfig.bankTransferDiscountPercent}%)
+                </span>
+                <span className="tabular-nums">−{formatPrice(discountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between border-t border-foreground/10 pt-3 text-base font-semibold">
-              <span>Total to pay</span>
-              <span className="tabular-nums">{formatPrice(total)}</span>
+              <span>{shopifyCheckout ? "Estimated total" : "Total to pay"}</span>
+              <span className="tabular-nums">
+                {formatPrice(shopifyCheckout ? subtotal + shipping : total)}
+              </span>
             </div>
+            {shopifyCheckout && (
+              <p className="text-xs text-foreground/55">
+                Final total is confirmed on Shopify checkout (shipping &amp; payment
+                methods).
+              </p>
+            )}
           </div>
 
           <label className="mt-6 flex gap-2 text-sm">
@@ -354,7 +439,11 @@ export function CheckoutView() {
             disabled={submitting}
             className="mt-4 w-full rounded-md bg-pine py-3.5 text-sm font-semibold text-bone hover:brightness-95 disabled:opacity-60"
           >
-            {submitting ? "Processing…" : "Place order — pay by bank transfer"}
+            {submitting
+              ? "Redirecting…"
+              : shopifyCheckout
+                ? "Continue to secure checkout"
+                : "Place order — pay by bank transfer"}
           </button>
         </aside>
       </form>
