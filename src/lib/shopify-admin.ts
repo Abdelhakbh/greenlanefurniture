@@ -146,8 +146,11 @@ export async function ensureShopifyVariantInStock(variantId: number) {
       id: number;
       inventory_item_id: number | null;
       inventory_policy: string;
+      inventory_management: string | null;
     };
-  }>(`/variants/${variantId}.json?fields=id,inventory_item_id,inventory_policy`);
+  }>(
+    `/variants/${variantId}.json?fields=id,inventory_item_id,inventory_policy,inventory_management`,
+  );
 
   const variant = data.variant;
   if (variant.inventory_policy !== "continue") {
@@ -156,14 +159,23 @@ export async function ensureShopifyVariantInStock(variantId: number) {
     });
   }
 
-  if (variant.inventory_item_id) {
+  const trackingOn = variant.inventory_management === "shopify";
+  if (trackingOn && variant.inventory_item_id) {
     const locationId = await getPrimaryLocationId();
     if (locationId) {
-      await adminPost("/inventory_levels/set.json", {
-        location_id: locationId,
-        inventory_item_id: variant.inventory_item_id,
-        available: 999,
-      });
+      try {
+        await adminPost("/inventory_levels/set.json", {
+          location_id: locationId,
+          inventory_item_id: variant.inventory_item_id,
+          available: 999,
+        });
+      } catch (e) {
+        console.warn(
+          "[ensureShopifyVariantInStock] skip inventory set for variant",
+          variantId,
+          e instanceof Error ? e.message : e,
+        );
+      }
     }
   }
 
