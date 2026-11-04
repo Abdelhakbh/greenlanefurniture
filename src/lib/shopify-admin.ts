@@ -84,15 +84,118 @@ async function getAccessToken() {
   return token;
 }
 
-async function adminGet<T>(path: string): Promise<T> {
+async function adminFetch<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<T> {
   const res = await fetch(`https://${adminShopHost()}/admin/api/2025-01${path}`, {
-    headers: { "X-Shopify-Access-Token": await getAccessToken() },
+    method,
+    headers: {
+      "X-Shopify-Access-Token": await getAccessToken(),
+      ...(body ? { "Content-Type": "application/json" } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
     next: { revalidate: 0 },
   });
   if (!res.ok) {
-    throw new Error(`Shopify ${path} (${res.status})`);
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Shopify ${method} ${path} (${res.status}) ${detail.slice(0, 120)}`);
   }
-  return res.json() as Promise<T>;
+  const text = await res.text();
+  return (text ? JSON.parse(text) : {}) as T;
+}
+
+async function adminGet<T>(path: string): Promise<T> {
+  return adminFetch<T>("GET", path);
+}
+
+async function adminPut<T>(path: string, body: unknown): Promise<T> {
+  return adminFetch<T>("PUT", path, body);
+}
+
+async function adminPost<T>(path: string, body: unknown): Promise<T> {
+  return adminFetch<T>("POST", path, body);
+}
+
+let primaryLocationId: number | null = null;
+const stockedVariantIds = new Set<number>();
+
+async function getPrimaryLocationId() {
+  if (primaryLocationId) return primaryLocationId;
+  const data = await adminGet<{ locations: { id: number; active: boolean }[] }>(
+    "/locations.json",
+  );
+  const loc = data.locations.find((l) => l.active) ?? data.locations[0];
+  primaryLocationId = loc?.id ?? null;
+  return primaryLocationId;
+}
+
+/** Shopify checkout: allow sale even when tracked inventory is 0. */
+export async function ensureShopifyVariantInStock(variantId: number) {
+  if (stockedVariantIds.has(variantId)) return;
+  const data = await adminGet<{
+    variant: {
+      id: number;
+      inventory_item_id: number | null;
+      inventory_policy: string;
+    };
+  }>(`/variants/${variantId}.json?fields=id,inventory_item_id,inventory_policy`);
+
+  const variant = data.variant;
+  if (variant.inventory_policy !== "continue") {
+    await adminPut(`/variants/${variantId}.json`, {
+      variant: { id: variantId, inventory_policy: "continue" },
+    });
+  }
+
+  if (variant.inventory_item_id) {
+    const locationId = await getPrimaryLocationId();
+    if (locationId) {
+      await adminPost("/inventory_levels/set.json", {
+        location_id: locationId,
+        inventory_item_id: variant.inventory_item_id,
+        available: 999,
+      });
+    }
+  }
+
+  stockedVariantIds.add(variantId);
+}
+
+export async function syncAllShopifyInventory() {
+  const locationId = await getPrimaryLocationId();
+  if (!locationId) throw new Error("No Shopify location found");
+
+  let sinceId = 0;
+  let products = 0;
+  let variants = 0;
+
+  for (;;) {
+    const path = `/products.json?limit=250&fields=id,variants${
+      sinceId ? `&since_id=${sinceId}` : ""
+    }`;
+    const data = await adminGet<{
+      products: {
+        id: number;
+        variants: { id: number; inventory_item_id: number | null }[];
+      }[];
+    }>(path);
+    const batch = data.products ?? [];
+    if (!batch.length) break;
+
+    for (const product of batch) {
+      sinceId = product.id;
+      products++;
+      for (const variant of product.variants ?? []) {
+        await ensureShopifyVariantInStock(variant.id);
+        variants++;
+      }
+    }
+    if (batch.length < 250) break;
+  }
+
+  return { products, variants, locationId };
 }
 
 async function getProductByHandle(handle: string): Promise<ShopifyProduct | null> {
@@ -195,6 +298,7 @@ export async function resolveShopifyCheckoutLines(lines: CheckoutCartLine[]) {
         `Could not match variant on Shopify for ${line.title ?? line.handle}. Try re-selecting options.`,
       );
     }
+    await ensureShopifyVariantInStock(variant.id);
     resolved.push({ variantId: variant.id, qty: line.qty });
   }
   return resolved;
