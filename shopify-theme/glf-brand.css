@@ -82,12 +82,8 @@ h2,
 }
 
 .header__heading-link .header__heading-logo-wrapper::after {
-  content: "SOFAS • BEDS • A BRIGHTER HOME";
-  margin-top: 0.25rem;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--glf-lane-green);
+  content: none;
+  display: none;
 }
 
 .header__menu-item--primary .header__menu-item,
