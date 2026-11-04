@@ -138,7 +138,32 @@ async function getPrimaryLocationId() {
   return primaryLocationId;
 }
 
-/** Shopify checkout: allow sale even when tracked inventory is 0. */
+async function connectInventoryAtLocation(
+  inventoryItemId: number,
+  locationId: number,
+) {
+  try {
+    await adminPost("/inventory_levels/connect.json", {
+      location_id: locationId,
+      inventory_item_id: inventoryItemId,
+      relocate_if_necessary: true,
+    });
+  } catch {
+    /* already connected at this location */
+  }
+}
+
+async function setVariantUntracked(variantId: number) {
+  await adminPut(`/variants/${variantId}.json`, {
+    variant: {
+      id: variantId,
+      inventory_management: null,
+      inventory_policy: "continue",
+    },
+  });
+}
+
+/** Shopify checkout: never block purchase for inventory (continue + stock or untrack). */
 export async function ensureShopifyVariantInStock(variantId: number) {
   if (stockedVariantIds.has(variantId)) return;
   const data = await adminGet<{
@@ -153,17 +178,19 @@ export async function ensureShopifyVariantInStock(variantId: number) {
   );
 
   const variant = data.variant;
+  const trackingOn = variant.inventory_management === "shopify";
+
   if (variant.inventory_policy !== "continue") {
     await adminPut(`/variants/${variantId}.json`, {
       variant: { id: variantId, inventory_policy: "continue" },
     });
   }
 
-  const trackingOn = variant.inventory_management === "shopify";
   if (trackingOn && variant.inventory_item_id) {
     const locationId = await getPrimaryLocationId();
     if (locationId) {
       try {
+        await connectInventoryAtLocation(variant.inventory_item_id, locationId);
         await adminPost("/inventory_levels/set.json", {
           location_id: locationId,
           inventory_item_id: variant.inventory_item_id,
@@ -171,11 +198,14 @@ export async function ensureShopifyVariantInStock(variantId: number) {
         });
       } catch (e) {
         console.warn(
-          "[ensureShopifyVariantInStock] skip inventory set for variant",
+          "[ensureShopifyVariantInStock] untracking variant after inventory error",
           variantId,
           e instanceof Error ? e.message : e,
         );
+        await setVariantUntracked(variantId);
       }
+    } else {
+      await setVariantUntracked(variantId);
     }
   }
 
