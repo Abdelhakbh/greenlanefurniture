@@ -1,0 +1,356 @@
+/* Green Lane Furniture — matches greenlanefurniture.co.uk */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  --glf-bone: #f7f5f0;
+  --glf-bone-dim: #ebe6dc;
+  --glf-pine-deep: #1a2e1a;
+  --glf-pine: #2d5a27;
+  --glf-lane-green: #3d6b35;
+  --glf-lane-tint: #e8f0e6;
+  --glf-amber: #e8c547;
+  --glf-amber-ink: #5c4a08;
+  --font-heading-family: "Fraunces", Georgia, serif;
+  --font-body-family: "Hanken Grotesk", system-ui, sans-serif;
+}
+
+body,
+.color-background-1,
+.gradient {
+  background-color: var(--glf-bone) !important;
+  color: var(--glf-pine-deep);
+}
+
+body,
+.button,
+h1,
+h2,
+h3,
+h4,
+.h0,
+.h1,
+.h2,
+.h3 {
+  font-family: var(--font-body-family) !important;
+}
+
+h1,
+h2,
+.h0,
+.h1,
+.h2,
+.title,
+.banner__heading,
+.card__heading {
+  font-family: var(--font-heading-family) !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.02em;
+}
+
+.section-header,
+.header-wrapper,
+.shopify-section-header-sticky .header-wrapper {
+  background: rgba(247, 245, 240, 0.92) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(26, 46, 26, 0.1);
+}
+
+.header__heading-logo-wrapper img,
+.header__heading-logo {
+  display: none !important;
+}
+
+.header__heading-link {
+  text-decoration: none !important;
+}
+
+.header__heading-link .header__heading-logo-wrapper {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+  width: auto !important;
+  max-width: none !important;
+}
+
+.header__heading-link .header__heading-logo-wrapper::before {
+  content: "Green Lane Furniture";
+  font-family: var(--font-heading-family);
+  font-size: clamp(0.95rem, 2vw, 1.15rem);
+  font-weight: 600;
+  color: var(--glf-pine-deep);
+}
+
+.header__heading-link .header__heading-logo-wrapper::after {
+  content: "SOFAS • BEDS • A BRIGHTER HOME";
+  margin-top: 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--glf-lane-green);
+}
+
+.header__menu-item--primary .header__menu-item,
+.list-menu__item--link {
+  font-size: 0.95rem;
+}
+
+.header__menu-item--primary .header__menu-item:hover,
+.list-menu__item--link:hover {
+  border-bottom-color: var(--glf-amber) !important;
+  color: var(--glf-pine-deep) !important;
+}
+
+.button,
+.shopify-payment-button__button,
+button[name="add"],
+.cart__checkout-button {
+  background-color: var(--glf-pine) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+}
+
+.button--secondary {
+  background: transparent !important;
+  color: var(--glf-pine-deep) !important;
+  border: 1px solid rgba(26, 46, 26, 0.25) !important;
+}
+
+.card,
+.card-wrapper .card {
+  border-radius: 8px !important;
+  overflow: hidden;
+  background: var(--glf-bone) !important;
+  border: 1px solid rgba(26, 46, 26, 0.08) !important;
+}
+
+.card__media,
+.media {
+  border-radius: 8px 8px 0 0;
+}
+
+.badge,
+.price__badge-sale {
+  background-color: var(--glf-amber) !important;
+  color: var(--glf-amber-ink) !important;
+}
+
+.footer,
+.shopify-section-group-footer-group {
+  background: var(--glf-pine-deep) !important;
+  color: var(--glf-bone) !important;
+}
+
+.footer a:hover {
+  color: var(--glf-amber) !important;
+}
+
+.banner--desktop-transparent .banner__box {
+  background: transparent;
+}
+
+.image-banner__heading,
+.banner__heading {
+  max-width: 16ch;
+}
+
+/* Full-width top delivery bar (matches greenlanefurniture.co.uk) */
+.shopify-section-group-header-group,
+.announcement-bar-section,
+.section-header.shopify-section-group-header-group {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.utility-bar,
+.announcement-bar-section .utility-bar,
+.shopify-section-group-header-group .announcement-bar,
+.announcement-bar.color-scheme-3,
+.announcement-bar.color-scheme-4 {
+  background: var(--glf-amber) !important;
+  color: var(--glf-amber-ink) !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.utility-bar .page-width,
+.utility-bar__grid.page-width {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding: 0.375rem 1rem !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.utility-bar__grid--3-col,
+.utility-bar__grid--2-col {
+  grid-template-columns: 1fr !important;
+}
+
+.announcement-bar__message,
+.announcement-bar__link,
+.utility-bar .announcement-bar__message {
+  color: var(--glf-amber-ink) !important;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-align: center !important;
+  width: 100%;
+  justify-content: center;
+}
+
+.section-header .header-wrapper {
+  position: sticky !important;
+  top: 0;
+  z-index: 40;
+}
+
+.header {
+  min-height: 72px;
+}
+
+/* —— Green Lane home hero (replaces full-width banner) —— */
+.section-glf-hero,
+.glf-hero {
+  background: var(--glf-bone-dim);
+  overflow: hidden;
+}
+
+.glf-hero__grid {
+  display: grid;
+  align-items: center;
+  gap: 2rem;
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1rem, 4vw, 3rem);
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+@media screen and (min-width: 990px) {
+  .glf-hero__grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+  }
+}
+
+.glf-hero__eyebrow {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--glf-lane-green);
+}
+
+.glf-hero__heading {
+  margin: 1rem 0 0;
+  max-width: 16ch;
+  font-family: var(--font-heading-family) !important;
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--glf-pine-deep);
+}
+
+.glf-hero__sub {
+  margin: 1.5rem 0 0;
+  max-width: 36rem;
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: rgba(26, 46, 26, 0.7);
+}
+
+.glf-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.glf-hero__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  border-radius: 6px;
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.glf-hero__btn--primary {
+  background: var(--glf-pine);
+  color: var(--glf-bone) !important;
+}
+
+.glf-hero__btn--primary:hover {
+  filter: brightness(1.05);
+}
+
+.glf-hero__btn--secondary {
+  background: rgba(247, 245, 240, 0.8);
+  color: var(--glf-pine-deep) !important;
+  border: 1px solid rgba(26, 46, 26, 0.25);
+}
+
+.glf-hero__btn--secondary:hover {
+  background: var(--glf-bone);
+}
+
+.glf-hero__media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(26, 46, 26, 0.12);
+}
+
+@media screen and (min-width: 990px) {
+  .glf-hero__media {
+    aspect-ratio: 5 / 4;
+  }
+}
+
+.glf-hero__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.glf-hero__media-shade {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.25), transparent 55%);
+}
+
+.header__menu-item--primary .header__menu-item,
+.mega-menu__link {
+  border-bottom: 2px solid transparent;
+}
+
+.header__menu-item--primary .header__menu-item:hover {
+  border-bottom-color: var(--glf-amber) !important;
+}
+
+.orbi-faq,
+.glf-faq {
+  background: var(--glf-bone-dim) !important;
+}
+
+.orbi-faq-title,
+.glf-faq-title {
+  font-family: var(--font-heading-family) !important;
+  color: var(--glf-pine-deep) !important;
+}
+
+.orbi-faq-icon {
+  color: var(--glf-lane-green) !important;
+}

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { site } from "@/lib/site";
 
 type LogoProps = {
@@ -7,21 +6,25 @@ type LogoProps = {
 };
 
 export function Logo({ variant = "header", className = "" }: LogoProps) {
-  const heightClass =
-    variant === "footer"
-      ? "h-11 sm:h-12"
-      : variant === "cart"
-        ? "h-7 sm:h-8"
-        : "h-8 w-auto sm:h-9";
+  const isFooter = variant === "footer";
+  const isCart = variant === "cart";
+
+  const titleClass = isFooter
+    ? "font-display text-xl font-medium text-bone"
+    : isCart
+      ? "font-display text-base font-semibold tracking-[-0.02em] text-pine-deep"
+      : "font-display text-[0.95rem] font-semibold tracking-[-0.02em] text-pine-deep sm:text-[1.15rem]";
+
+  const taglineClass = isFooter
+    ? "mt-1 text-sm font-semibold uppercase tracking-[0.12em] text-bone/80"
+    : isCart
+      ? "mt-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-lane-green sm:text-[0.7rem]"
+      : "mt-0.5 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-lane-green sm:text-xs";
 
   return (
-    <Image
-      src={site.logoUrl}
-      alt={site.name}
-      width={site.logoWidth}
-      height={site.logoHeight}
-      className={`${heightClass} w-auto max-w-[min(280px,70vw)] object-contain object-left ${className}`.trim()}
-      priority={variant === "header"}
-    />
+    <span className={`flex flex-col leading-tight ${className}`.trim()}>
+      <span className={titleClass}>{site.name}</span>
+      <span className={taglineClass}>{site.tagline}</span>
+    </span>
   );
 }

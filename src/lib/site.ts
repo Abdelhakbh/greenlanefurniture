@@ -1,9 +1,5 @@
 export const site = {
   name: "Green Lane Furniture",
-  logoUrl:
-    "https://cdn.shopify.com/s/files/1/0957/0579/2819/files/168543361935274608_2.png?v=1758215424",
-  logoWidth: 870,
-  logoHeight: 69,
   tagline: "Sofas • Beds • A Brighter Home",
   headline: "Furniture for every home",
   subhead:
