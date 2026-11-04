@@ -229,14 +229,11 @@ export default async function ProductPage({
   return (
     <>
       <JsonLd data={productLd} />
-      <div className="mx-auto max-w-[1240px] px-[clamp(1rem,4vw,3rem)] pt-6 pb-2">
-
+      <div className="border-b border-foreground/10">
+        <div className="mx-auto max-w-[1240px] px-[clamp(1rem,4vw,3rem)] py-4">
         <nav
-
           aria-label="Breadcrumb"
-
-          className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-foreground/50"
-
+          className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center text-sm text-foreground/50"
         >
 
           <Link href="/" className="hover:text-foreground">
@@ -288,12 +285,10 @@ export default async function ProductPage({
           <span className="line-clamp-1 text-foreground/70">{product.title}</span>
 
         </nav>
-
+        </div>
       </div>
 
-
-
-      <div className="mx-auto grid max-w-[1240px] items-start gap-10 px-[clamp(1rem,4vw,3rem)] pb-12 lg:grid-cols-2 lg:gap-14">
+      <div className="mx-auto grid max-w-[1240px] items-start gap-10 px-[clamp(1rem,4vw,3rem)] pt-8 pb-12 lg:grid-cols-2 lg:gap-14">
 
         <ProductGallery
           images={product.images}
