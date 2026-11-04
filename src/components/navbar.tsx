@@ -33,7 +33,7 @@ export function Navbar({ categories }: { categories: StoreCollection[] }) {
         </button>
         <Link
           href="/"
-          aria-label={`Green Lane Furniture by ${site.logoByline} home`}
+          aria-label="Green Lane Furniture home"
           className="flex shrink-0 items-center"
         >
           <Logo />

@@ -124,7 +124,7 @@ export async function shareImage() {
               marginTop: 22,
             }}
           >
-            BY {site.logoByline}
+            {site.tagline.toUpperCase()}
           </div>
         </div>
         <div

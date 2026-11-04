@@ -8,6 +8,7 @@ import { ProductCard } from "@/components/product-card";
 
 import { ProductGallery } from "@/components/product-gallery";
 
+import { ReviewStars } from "@/components/product-reviews";
 import { ProductTabs } from "@/components/product-tabs";
 
 import { ProductTrustGrid } from "@/components/product-trust-grid";
@@ -19,7 +20,7 @@ import {
   getCollections,
 
   getProduct,
-
+  getProductReviews,
   getRelatedProductCards,
 
   toProductCard,
@@ -121,11 +122,13 @@ export default async function ProductPage({
 
 
 
-  const [collections, related] = await Promise.all([
+  const [collections, related, reviews] = await Promise.all([
 
     getCollections(),
 
     getRelatedProductCards(product, 4),
+
+    getProductReviews(product.id),
 
   ]);
 
@@ -159,6 +162,16 @@ export default async function ProductPage({
     product.variants.length > 1 && product.variants.some((v) => v.option1);
 
   const ldDescription = plain.slice(0, 500) || product.title;
+  const reviewAverage = reviews.length
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+    : 0;
+  const aggregateRating = reviews.length
+    ? {
+        "@type": "AggregateRating",
+        ratingValue: reviewAverage.toFixed(1),
+        reviewCount: reviews.length,
+      }
+    : undefined;
 
   const brandLd = { "@type": "Brand", name: site.name };
 
@@ -181,6 +194,7 @@ export default async function ProductPage({
         description: ldDescription,
         url: absoluteUrl(`/product/${handle}`),
         brand: brandLd,
+        ...(aggregateRating ? { aggregateRating } : {}),
         productGroupID: String(product.id),
         variesBy: ["https://schema.org/color"],
         hasVariant: product.variants.map((v) => {
@@ -204,6 +218,7 @@ export default async function ProductPage({
         image: product.images.map((i) => i.src).filter(Boolean),
         sku: String(product.variants[0]?.id ?? product.id),
         brand: brandLd,
+        ...(aggregateRating ? { aggregateRating } : {}),
         offers: {
           ...offerLd(product.variants[0], absoluteUrl(`/product/${handle}`)),
           price: card.price.toFixed(2),
@@ -317,6 +332,8 @@ export default async function ProductPage({
 
           </h1>
 
+          <ReviewStars rating={reviewAverage} count={reviews.length} />
+
 
 
           {subtitle && (
@@ -392,6 +409,10 @@ export default async function ProductPage({
           productType={product.product_type}
 
           tags={product.tags}
+
+          reviews={reviews}
+
+          showWillItFit={/ottoman|bed|mattress/i.test(product.product_type + product.title)}
 
         />
 

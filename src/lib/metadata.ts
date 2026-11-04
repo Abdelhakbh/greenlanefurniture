@@ -5,10 +5,9 @@ export const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
   `https://${site.domain}`;
 
-/** Default share image (1200×630). Override with NEXT_PUBLIC_OG_IMAGE_URL in Vercel. */
+/** Brand share image (1200×630) at /share-image. */
 export const defaultOgImage =
-  process.env.NEXT_PUBLIC_OG_IMAGE_URL ??
-  "https://images.unsplash.com/photo-1618221195710-dd6b41fa6046?auto=format&fit=crop&w=1200&h=630&q=85";
+  process.env.NEXT_PUBLIC_OG_IMAGE_URL ?? "/share-image";
 
 export function absoluteUrl(path: string) {
   const p = path.startsWith("/") ? path : `/${path}`;
@@ -41,6 +40,16 @@ export function buildPageMetadata({
   const url = absoluteUrl(path || "/");
   const shareImage = image || defaultOgImage;
   const alt = imageAlt ?? title;
+  const imagePath = shareImage.split("?")[0].toLowerCase();
+  const imageType = imagePath.endsWith(".jpg") || imagePath.endsWith(".jpeg")
+    ? "image/jpeg"
+    : imagePath.endsWith(".webp")
+      ? "image/webp"
+      : imagePath.endsWith(".gif")
+        ? "image/gif"
+        : imagePath.endsWith(".svg")
+          ? "image/svg+xml"
+          : "image/png";
 
   return {
     title,
@@ -71,6 +80,7 @@ export function buildPageMetadata({
           width: 1200,
           height: 630,
           alt,
+          type: imageType,
         },
       ],
     },
@@ -78,7 +88,14 @@ export function buildPageMetadata({
       card: "summary_large_image",
       title: ogTitle(title),
       description: desc,
-      images: [shareImage],
+      images: [
+        {
+          url: shareImage,
+          width: 1200,
+          height: 630,
+          alt,
+        },
+      ],
     },
     robots: noIndex
       ? { index: false, follow: false }
@@ -109,4 +126,9 @@ export const rootSiteMetadata: Metadata = {
   robots: homeMeta.robots,
   applicationName: site.name,
   category: "shopping",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    shortcut: ["/icon.svg"],
+    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
+  },
 };

@@ -1,7 +1,7 @@
 import {
   amountToPence,
   checkoutConfig,
-  computeBankTransferTotals,
+  computeOrderTotals,
   type PaymentMethod,
 } from "./checkout-config";
 
@@ -178,10 +178,10 @@ export type CreateWooOrderInput = {
 
 function paymentForMethod(_method: PaymentMethod) {
   return {
-    payment_method: "bacs",
-    payment_method_title: "Bank transfer",
+    payment_method: "other",
+    payment_method_title: "Online checkout",
     set_paid: false,
-    status: "on-hold" as const,
+    status: "pending" as const,
   };
 }
 
@@ -247,16 +247,11 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
   const catalogTotal =
     (await computeExpectedOrderTotalPence(input.lines, input.shippingTotal)) /
     100;
-  const { discountAmount, total } = computeBankTransferTotals(
-    catalogTotal,
-    0,
-  );
-
-  const paymentNote = `Payment: Bank transfer (awaiting). Amount due after ${checkoutConfig.bankTransferDiscountPercent}% discount: £${total.toFixed(2)}`;
+  const { total } = computeOrderTotals(catalogTotal, 0);
 
   const noteParts = [
     input.customerNote?.trim(),
-    `${paymentNote} The customer was asked to use the order number as the payment reference.`,
+    `Payment: online checkout. Amount due: £${total.toFixed(2)}.`,
   ].filter(Boolean);
 
   const payload = {
@@ -269,21 +264,10 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
     shipping: shipTo,
     line_items,
     ...(shipping_lines.length ? { shipping_lines } : {}),
-    ...(discountAmount > 0
-      ? {
-          fee_lines: [
-            {
-              name: `Bank transfer discount (${checkoutConfig.bankTransferDiscountPercent}%)`,
-              total: (-discountAmount).toFixed(2),
-            },
-          ],
-        }
-      : {}),
     meta_data: [
       { key: "_glf_order_ref", value: input.ref },
       { key: "_glf_payment_method", value: input.method },
       { key: "_created_via", value: "greenlanefurniture-headless" },
-      { key: "_glf_bank_discount", value: discountAmount.toFixed(2) },
       { key: "_glf_amount_due", value: total.toFixed(2) },
     ],
   };
@@ -293,7 +277,6 @@ export async function createWooCommerceOrder(input: CreateWooOrderInput) {
     wooOrderId: order.id,
     wooOrderNumber: order.number,
     wooOrderKey: order.order_key,
-    discountAmount,
     amountDue: total,
   };
 }

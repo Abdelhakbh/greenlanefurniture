@@ -188,7 +188,7 @@ async function mapWooProduct(
     title: p.name,
     handle: p.slug,
     body_html: p.description || p.short_description || "",
-    product_type: p.categories[0]?.name ?? "",
+    product_type: categoryLabel(p.categories),
     tags: p.tags?.map((t) => t.name) ?? [],
     variants,
     images: p.images.map((i) => ({ src: i.src, alt: i.alt ?? null })),
@@ -280,6 +280,71 @@ export async function getProduct(handle: string) {
   return mapWooProduct(p, true);
 }
 
+export type ProductReview = {
+  id: number;
+  author: string;
+  date: string;
+  rating: number;
+  title: string;
+  body: string;
+  image?: string;
+};
+
+function reviewText(html: string) {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
+      String.fromCharCode(parseInt(code, 16)),
+    )
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&quot;/g, '"')
+    .replace(/&rsquo;|&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+}
+
+function splitReview(html: string) {
+  const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+  const image = imgMatch?.[1]?.replace(/&amp;/g, "&");
+  const titleMatch = html.match(/<strong>([\s\S]*?)<\/strong>/i);
+  const title = titleMatch ? reviewText(titleMatch[1]) : "";
+  const stripped = html.replace(/<img[\s\S]*?>/gi, "");
+  const body = reviewText(stripped.replace(/<strong>[\s\S]*?<\/strong>/i, ""));
+  return { title, body: body || title, image };
+}
+
+export async function getProductReviews(productId: number): Promise<ProductReview[]> {
+  const rows = await wooListAllPages<{
+    id: number;
+    date_created: string;
+    reviewer: string;
+    review: string;
+    rating: number;
+  }>(
+    `/products/reviews?product=${productId}&status=approved&_fields=id,date_created,reviewer,review,rating`,
+    100,
+  );
+  return rows
+    .map((row) => {
+      const text = splitReview(row.review || "");
+      return {
+        id: row.id,
+        author: row.reviewer || "Customer",
+        date: row.date_created,
+        rating: Math.min(5, Math.max(1, row.rating || 5)),
+        title: text.title,
+        body: text.body,
+        image: text.image,
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 export async function getCollections(): Promise<StoreCollection[]> {
   try {
     return await fetchCollections();
@@ -289,12 +354,21 @@ export async function getCollections(): Promise<StoreCollection[]> {
   }
 }
 
+function categoryLabel(categories: WooCategory[]) {
+  const names = categories.map((c) => c.name).filter(Boolean);
+  const brand = "Leeds Furniture";
+  const specific = names.find((name) => name !== brand);
+  if (names.includes(brand) && specific) return `${brand} · ${specific}`;
+  return names[0] ?? "";
+}
+
 async function fetchCollections(): Promise<StoreCollection[]> {
   const cats = await wooListAllPages<{
     id: number;
     name: string;
     slug: string;
     description: string;
+    parent: number;
     count: number;
     image: { src: string } | null;
   }>("/products/categories?hide_empty=true");
@@ -307,6 +381,7 @@ async function fetchCollections(): Promise<StoreCollection[]> {
       description: c.description ?? "",
       image: c.image?.src ? { src: c.image.src } : null,
       products_count: c.count,
+      parentId: c.parent ?? 0,
     }));
 }
 

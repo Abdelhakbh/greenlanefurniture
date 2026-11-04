@@ -1,21 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ProductReviews } from "@/components/product-reviews";
+import { WillItFitPanel } from "@/components/will-it-fit-panel";
 import { site } from "@/lib/site";
+import type { ProductReview } from "@/lib/woocommerce";
 
-const tabs = ["Description", "Details", "Shipping & returns"] as const;
+const baseTabs = ["Description", "Details", "Shipping & returns"] as const;
+type TabName = (typeof baseTabs)[number] | "Reviews" | "Will it fit?";
 
 export function ProductTabs({
   descriptionHtml,
   productType,
   tags,
+  reviews,
+  showWillItFit,
 }: {
   descriptionHtml: string;
   productType: string;
   tags: string[];
+  reviews: ProductReview[];
+  showWillItFit?: boolean;
 }) {
-  const [active, setActive] = useState<(typeof tabs)[number]>("Description");
+  const tabs: TabName[] = [
+    ...baseTabs,
+    ...(showWillItFit ? (["Will it fit?"] as const) : []),
+    ...(reviews.length ? (["Reviews"] as const) : []),
+  ];
+  const [active, setActive] = useState<TabName>("Description");
+
+  useEffect(() => {
+    function openFromHash() {
+      if (window.location.hash !== "#reviews" || !reviews.length) return;
+      setActive("Reviews");
+      requestAnimationFrame(() => {
+        document.getElementById("reviews")?.scrollIntoView({ behavior: "smooth" });
+      });
+    }
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, [reviews.length]);
 
   return (
     <div className="border-t border-foreground/10 pt-10">
@@ -44,7 +70,7 @@ export function ProductTabs({
       <div className="py-8">
         {active === "Description" && descriptionHtml && (
           <div
-            className="prose prose-neutral max-w-[72ch] prose-p:leading-relaxed prose-headings:font-display [&_table]:w-full [&_td]:border [&_td]:p-2 [&_th]:border [&_th]:p-2"
+            className="max-w-[72ch] text-[1.05rem] leading-relaxed text-foreground/80 [&_p]:mb-4 [&_h3]:mb-3 [&_h3]:mt-8 [&_h3]:font-display [&_h3]:text-[1.45rem] [&_h3]:font-medium [&_h3]:text-pine-deep [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:my-1 [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_th]:border [&_th]:border-foreground/15 [&_th]:bg-bone-dim [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-foreground [&_td]:border [&_td]:border-foreground/15 [&_td]:px-3 [&_td]:py-2 [&_details]:my-2 [&_details]:overflow-hidden [&_details]:rounded-md [&_details]:border [&_details]:border-foreground/15 [&_summary]:cursor-pointer [&_summary]:px-4 [&_summary]:py-3 [&_summary]:font-medium [&_summary]:text-foreground [&_details_p]:mb-0 [&_details_p]:px-4 [&_details_p]:pb-3"
             dangerouslySetInnerHTML={{ __html: descriptionHtml }}
           />
         )}
@@ -91,6 +117,8 @@ export function ProductTabs({
             </p>
           </div>
         )}
+        {active === "Will it fit?" && showWillItFit && <WillItFitPanel />}
+        {active === "Reviews" && <ProductReviews reviews={reviews} />}
       </div>
     </div>
   );

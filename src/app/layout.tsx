@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Hanken_Grotesk } from "next/font/google";
 import { SiteShell } from "@/components/site-shell";
 import { JsonLd } from "@/components/json-ld";
@@ -20,12 +20,21 @@ const hanken = Hanken_Grotesk({
 
 export const metadata: Metadata = rootSiteMetadata;
 
+export const viewport: Viewport = {
+  themeColor: "#1a2e1a",
+  colorScheme: "light",
+  width: "device-width",
+  initialScale: 1,
+};
+
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "FurnitureStore",
   name: site.name,
   legalName: site.legalName,
   url: absoluteUrl("/"),
+  logo: absoluteUrl("/apple-icon"),
+  image: absoluteUrl("/share-image"),
   email: site.email,
   telephone: site.phone,
   address: {

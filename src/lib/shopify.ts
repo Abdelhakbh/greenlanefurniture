@@ -37,6 +37,7 @@ export type ShopifyCollection = {
   description: string;
   image: { src: string } | null;
   products_count: number;
+  parentId?: number;
 };
 
 async function shopifyFetch<T>(path: string): Promise<T> {
@@ -97,7 +98,9 @@ export async function getCollections() {
   const data = await shopifyFetch<{ collections: ShopifyCollection[] }>(
     "/collections.json?limit=50",
   );
-  return data.collections.filter((c) => c.handle !== "frontpage");
+  return data.collections
+    .filter((c) => c.handle !== "frontpage")
+    .map((c) => ({ ...c, parentId: c.parentId ?? 0 }));
 }
 
 export async function getCollectionProducts(handle: string) {

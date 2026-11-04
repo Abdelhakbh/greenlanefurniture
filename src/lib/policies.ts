@@ -66,7 +66,7 @@ export const policies: Record<string, PolicyDoc> = {
       {
         heading: "Prices & payment",
         paragraphs: [
-          "Prices shown include VAT unless stated otherwise. We reserve the right to correct pricing errors before dispatch. Payment is taken securely via our checkout provider. Title to goods passes to you on delivery once payment has been received in full.",
+          "Prices shown include VAT unless stated otherwise. We reserve the right to correct pricing errors before dispatch. Orders are paid securely online at checkout (card and supported digital wallets). Title to goods passes to you on delivery once payment has been received in full.",
         ],
       },
       {

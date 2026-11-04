@@ -1,13 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#2d5a27"/>
-  <path d="M7 56c9-5 17-4 26-7s15-5 24-5" fill="none" stroke="#e8c547" stroke-width="4" stroke-linecap="round"/>
-  <g fill="#f7f5f0">
-    <rect x="17" y="14" width="30" height="13" rx="4"/>
-    <rect x="11" y="21" width="9" height="16" rx="3.5"/>
-    <rect x="44" y="21" width="9" height="16" rx="3.5"/>
-    <rect x="18" y="26" width="28" height="9" rx="2.5"/>
-    <rect x="14.5" y="37" width="3" height="4" rx="1"/>
-    <rect x="46.5" y="37" width="3" height="4" rx="1"/>
-  </g>
-  <path d="M20 26.5h24M32 27v7" stroke="#2d5a27" stroke-width="1.6" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Green Lane Furniture">
+  <rect width="64" height="64" rx="14" fill="#1a2e1a"/>
+  <text x="32" y="40" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="26" font-weight="700" fill="#f7f5f0" letter-spacing="-0.5">GL</text>
+  <rect x="18" y="47" width="28" height="3.5" rx="1.75" fill="#e8c547"/>
 </svg>

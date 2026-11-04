@@ -37,6 +37,10 @@ export async function getProduct(handle: string) {
   return useWooCommerce() ? woo.getProduct(handle) : shopify.getProduct(handle);
 }
 
+export async function getProductReviews(productId: number) {
+  return useWooCommerce() ? woo.getProductReviews(productId) : [];
+}
+
 export async function getCollections() {
   return useWooCommerce() ? woo.getCollections() : shopify.getCollections();
 }
