@@ -13,15 +13,31 @@ function authorized(req: Request) {
   return false;
 }
 
-/** POST — set all Shopify variants to continue selling with stock 999. */
+async function runSync() {
+  const result = await syncAllShopifyInventory();
+  return NextResponse.json({ ok: true, ...result });
+}
+
+/** POST/GET — untrack all Shopify variants (no SOLD OUT at checkout). Vercel Cron uses GET. */
+export async function GET(req: Request) {
+  if (!authorized(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  try {
+    return await runSync();
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Sync failed";
+    console.error("[sync-shopify-inventory]", message);
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+}
+
 export async function POST(req: Request) {
   if (!authorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   try {
-    const result = await syncAllShopifyInventory();
-    return NextResponse.json({ ok: true, ...result });
+    return await runSync();
   } catch (e) {
     const message = e instanceof Error ? e.message : "Sync failed";
     console.error("[sync-shopify-inventory]", message);

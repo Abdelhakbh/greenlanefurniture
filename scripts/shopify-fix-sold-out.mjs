@@ -1,6 +1,6 @@
 /**
- * Fix all Shopify variants: continue selling + stock at primary location (or untrack).
- * Loads .env.local when present (same vars as Vercel).
+ * Untrack all Shopify variants (continue selling, no SOLD OUT at checkout).
+ * Env: SHOPIFY_STORE_DOMAIN, SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET
  */
 
 import fs from "node:fs";
@@ -53,12 +53,7 @@ async function api(method, apiPath, body) {
   return text ? JSON.parse(text) : null;
 }
 
-const { locations } = await api("GET", "/locations.json");
-const locationId = locations.find((l) => l.active)?.id ?? locations[0]?.id;
-if (!locationId) throw new Error("No location");
-
 let sinceId = 0;
-let fixed = 0;
 let untracked = 0;
 
 for (;;) {
@@ -68,40 +63,17 @@ for (;;) {
   for (const p of products) {
     sinceId = p.id;
     for (const v of p.variants ?? []) {
-      const full = await api("GET", `/variants/${v.id}.json?fields=id,inventory_item_id,inventory_management,inventory_policy`);
-      const variant = full.variant;
-      await api("PUT", `/variants/${variant.id}.json`, {
-        variant: { id: variant.id, inventory_policy: "continue" },
+      await api("PUT", `/variants/${v.id}.json`, {
+        variant: {
+          id: v.id,
+          inventory_management: null,
+          inventory_policy: "continue",
+        },
       });
-      if (variant.inventory_management === "shopify" && variant.inventory_item_id) {
-        try {
-          try {
-            await api("POST", "/inventory_levels/connect.json", {
-              location_id: locationId,
-              inventory_item_id: variant.inventory_item_id,
-              relocate_if_necessary: true,
-            });
-          } catch { /* connected */ }
-          await api("POST", "/inventory_levels/set.json", {
-            location_id: locationId,
-            inventory_item_id: variant.inventory_item_id,
-            available: 999,
-          });
-          fixed++;
-        } catch {
-          await api("PUT", `/variants/${variant.id}.json`, {
-            variant: {
-              id: variant.id,
-              inventory_management: null,
-              inventory_policy: "continue",
-            },
-          });
-          untracked++;
-        }
-      }
+      untracked++;
     }
   }
   if (products.length < 250) break;
 }
 
-console.log({ locationId, stocked: fixed, untracked });
+console.log(`Untracked ${untracked} variants on ${shopHost}`);

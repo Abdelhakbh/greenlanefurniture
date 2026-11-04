@@ -125,33 +125,7 @@ async function adminPost<T>(path: string, body: unknown): Promise<T> {
   return adminFetch<T>("POST", path, body);
 }
 
-let primaryLocationId: number | null = null;
 const stockedVariantIds = new Set<number>();
-
-async function getPrimaryLocationId() {
-  if (primaryLocationId) return primaryLocationId;
-  const data = await adminGet<{ locations: { id: number; active: boolean }[] }>(
-    "/locations.json",
-  );
-  const loc = data.locations.find((l) => l.active) ?? data.locations[0];
-  primaryLocationId = loc?.id ?? null;
-  return primaryLocationId;
-}
-
-async function connectInventoryAtLocation(
-  inventoryItemId: number,
-  locationId: number,
-) {
-  try {
-    await adminPost("/inventory_levels/connect.json", {
-      location_id: locationId,
-      inventory_item_id: inventoryItemId,
-      relocate_if_necessary: true,
-    });
-  } catch {
-    /* already connected at this location */
-  }
-}
 
 async function setVariantUntracked(variantId: number) {
   await adminPut(`/variants/${variantId}.json`, {
@@ -163,59 +137,14 @@ async function setVariantUntracked(variantId: number) {
   });
 }
 
-/** Shopify checkout: never block purchase for inventory (continue + stock or untrack). */
+/** Shopify checkout: untrack + continue selling so checkout never shows SOLD OUT. */
 export async function ensureShopifyVariantInStock(variantId: number) {
   if (stockedVariantIds.has(variantId)) return;
-  const data = await adminGet<{
-    variant: {
-      id: number;
-      inventory_item_id: number | null;
-      inventory_policy: string;
-      inventory_management: string | null;
-    };
-  }>(
-    `/variants/${variantId}.json?fields=id,inventory_item_id,inventory_policy,inventory_management`,
-  );
-
-  const variant = data.variant;
-  const trackingOn = variant.inventory_management === "shopify";
-
-  if (variant.inventory_policy !== "continue") {
-    await adminPut(`/variants/${variantId}.json`, {
-      variant: { id: variantId, inventory_policy: "continue" },
-    });
-  }
-
-  if (trackingOn && variant.inventory_item_id) {
-    const locationId = await getPrimaryLocationId();
-    if (locationId) {
-      try {
-        await connectInventoryAtLocation(variant.inventory_item_id, locationId);
-        await adminPost("/inventory_levels/set.json", {
-          location_id: locationId,
-          inventory_item_id: variant.inventory_item_id,
-          available: 999,
-        });
-      } catch (e) {
-        console.warn(
-          "[ensureShopifyVariantInStock] untracking variant after inventory error",
-          variantId,
-          e instanceof Error ? e.message : e,
-        );
-        await setVariantUntracked(variantId);
-      }
-    } else {
-      await setVariantUntracked(variantId);
-    }
-  }
-
+  await setVariantUntracked(variantId);
   stockedVariantIds.add(variantId);
 }
 
 export async function syncAllShopifyInventory() {
-  const locationId = await getPrimaryLocationId();
-  if (!locationId) throw new Error("No Shopify location found");
-
   let sinceId = 0;
   let products = 0;
   let variants = 0;
@@ -227,7 +156,7 @@ export async function syncAllShopifyInventory() {
     const data = await adminGet<{
       products: {
         id: number;
-        variants: { id: number; inventory_item_id: number | null }[];
+        variants: { id: number }[];
       }[];
     }>(path);
     const batch = data.products ?? [];
@@ -237,6 +166,7 @@ export async function syncAllShopifyInventory() {
       sinceId = product.id;
       products++;
       for (const variant of product.variants ?? []) {
+        stockedVariantIds.delete(variant.id);
         await ensureShopifyVariantInStock(variant.id);
         variants++;
       }
@@ -244,7 +174,7 @@ export async function syncAllShopifyInventory() {
     if (batch.length < 250) break;
   }
 
-  return { products, variants, locationId };
+  return { products, variants, strategy: "untrack_all" };
 }
 
 async function getProductByHandle(handle: string): Promise<ShopifyProduct | null> {
