@@ -1,6 +1,10 @@
 export const site = {
   name: "Green Lane Furniture",
   tagline: "Sofas • Beds • A Brighter Home",
+  paymentMethodsImageUrl:
+    "https://cdn.shopify.com/s/files/1/0957/0579/2819/files/168543361935274608_2.png?v=1758215424",
+  paymentMethodsImageWidth: 870,
+  paymentMethodsImageHeight: 69,
   headline: "Furniture for every home",
   subhead:
     "Quality sofas, beds and home furniture from our Birmingham showroom on Green Lane.",
