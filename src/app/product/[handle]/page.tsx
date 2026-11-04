@@ -230,10 +230,10 @@ export default async function ProductPage({
     <>
       <JsonLd data={productLd} />
       <div className="border-b border-foreground/10">
-        <div className="mx-auto max-w-[1240px] px-[clamp(1rem,4vw,3rem)] py-4">
+        <div className="mx-auto flex min-h-12 max-w-[1240px] items-center px-[clamp(1rem,4vw,3rem)] py-3">
         <nav
           aria-label="Breadcrumb"
-          className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center text-sm text-foreground/50"
+          className="flex w-full flex-wrap items-center justify-start gap-x-1.5 gap-y-1 text-left text-sm text-foreground/50"
         >
 
           <Link href="/" className="hover:text-foreground">
