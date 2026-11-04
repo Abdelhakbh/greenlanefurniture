@@ -7,7 +7,6 @@ import { useState } from "react";
 import { useCart } from "./cart-context";
 import { formatPrice } from "@/lib/format";
 import { CheckoutPaymentMethods } from "@/components/checkout-payment-methods";
-import { Logo } from "@/components/logo";
 import { startShopifyCheckout } from "@/lib/start-shopify-checkout";
 import { useShopifyCheckoutUi } from "@/lib/shopify-checkout-public";
 
@@ -31,13 +30,10 @@ export function CartSheet() {
         onClick={() => setOpen(false)}
       />
       <aside className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-bone shadow-xl">
-        <div className="flex items-start justify-between gap-3 border-b px-5 py-4">
-          <div className="min-w-0">
-            <Logo variant="cart" />
-            <h2 className="mt-2 font-display text-lg font-medium">
-              Your bag ({count})
-            </h2>
-          </div>
+        <div className="flex items-center justify-between border-b px-5 py-4">
+          <h2 className="font-display text-xl font-medium">
+            Your bag ({count})
+          </h2>
           <button
             type="button"
             onClick={() => setOpen(false)}
