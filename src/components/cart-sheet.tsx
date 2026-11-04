@@ -6,6 +6,7 @@ import { Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "./cart-context";
 import { formatPrice } from "@/lib/format";
+import { CheckoutPaymentMethods } from "@/components/checkout-payment-methods";
 import { startShopifyCheckout } from "@/lib/start-shopify-checkout";
 import { useShopifyCheckoutUi } from "@/lib/shopify-checkout-public";
 
@@ -144,7 +145,7 @@ export function CartSheet() {
                   : "pointer-events-none bg-foreground/20 text-foreground/50"
               }`}
             >
-              {paying ? "Redirecting…" : "Pay securely — card & Shop Pay"}
+              {paying ? "Redirecting…" : "Continue to secure payment"}
             </button>
           ) : (
             <a
@@ -158,11 +159,13 @@ export function CartSheet() {
               Go to checkout
             </a>
           )}
-          <p className="mt-2 text-center text-xs text-foreground/55">
-            {shopifyCheckout
-              ? "Checkout on Shopify — no WordPress payment page"
-              : "Pay by bank transfer — 8% off"}
-          </p>
+          {shopifyCheckout ? (
+            <CheckoutPaymentMethods variant="compact" className="mt-3" />
+          ) : (
+            <p className="mt-2 text-center text-xs text-foreground/55">
+              Pay by bank transfer — 8% off
+            </p>
+          )}
           {payError && (
             <p className="mt-2 text-center text-xs text-red-800">{payError}</p>
           )}

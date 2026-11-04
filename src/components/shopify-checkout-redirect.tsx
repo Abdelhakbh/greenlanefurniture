@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CartLine } from "@/components/cart-context";
+import { CheckoutPaymentMethods } from "@/components/checkout-payment-methods";
 import { startShopifyCheckout } from "@/lib/start-shopify-checkout";
 
 export function ShopifyCheckoutRedirect({ lines }: { lines: CartLine[] }) {
@@ -47,8 +48,9 @@ export function ShopifyCheckoutRedirect({ lines }: { lines: CartLine[] }) {
     <div className="mx-auto max-w-lg px-6 py-20 text-center">
       <h1 className="font-display text-2xl font-medium">Secure checkout</h1>
       <p className="mt-3 text-sm text-foreground/70">
-        Redirecting you to Shopify to pay by card, Shop Pay, or other methods…
+        Redirecting you to secure checkout…
       </p>
+      <CheckoutPaymentMethods className="mx-auto mt-6 max-w-md" />
       <div
         className="mx-auto mt-8 size-8 animate-spin rounded-full border-2 border-pine border-t-transparent"
         aria-hidden

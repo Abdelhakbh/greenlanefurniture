@@ -3,7 +3,7 @@ import { Lock, Package, RotateCcw, Truck } from "lucide-react";
 const items = [
   { icon: Truck, label: "Free delivery", sub: "Mainland UK" },
   { icon: RotateCcw, label: "14-day returns", sub: "Unused items" },
-  { icon: Lock, label: "Secure checkout", sub: "Card & Shop Pay on Shopify" },
+  { icon: Lock, label: "Secure checkout", sub: "Cards, PayPal, Klarna & wallets" },
   { icon: Package, label: "Tracked orders", sub: "Furniture carriers" },
 ] as const;
 
