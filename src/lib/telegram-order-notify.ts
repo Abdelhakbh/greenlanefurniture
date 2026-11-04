@@ -116,20 +116,10 @@ export function shouldNotifyTelegramSale(status: string) {
   return !NO_SALE_STATUSES.has(status.toLowerCase());
 }
 
-export async function sendTelegramSaleNotification(
-  order: WooOrderForNotify,
-): Promise<boolean> {
-  if (!telegramConfigured()) {
-    return false;
-  }
-  if (!shouldNotifyTelegramSale(order.status)) {
-    return false;
-  }
-
+export async function sendTelegramText(text: string): Promise<boolean> {
+  if (!telegramConfigured()) return false;
   const token = process.env.TELEGRAM_BOT_TOKEN!.trim();
   const chatId = process.env.TELEGRAM_CHAT_ID!.trim();
-  const text = buildTelegramSaleMessage(order);
-
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -140,10 +130,22 @@ export async function sendTelegramSaleNotification(
     }),
     cache: "no-store",
   });
-
   if (!res.ok) {
     const detail = await res.text();
     throw new Error(`Telegram send failed (${res.status}): ${detail.slice(0, 200)}`);
   }
   return true;
+}
+
+export async function sendTelegramSaleNotification(
+  order: WooOrderForNotify,
+): Promise<boolean> {
+  if (!telegramConfigured()) {
+    return false;
+  }
+  if (!shouldNotifyTelegramSale(order.status)) {
+    return false;
+  }
+
+  return sendTelegramText(buildTelegramSaleMessage(order));
 }
