@@ -1,5 +1,6 @@
 import { site } from "./site";
 import { parseMoney, savingPercent } from "./format";
+import { storefrontAvailable } from "./storefront-availability";
 import type { ProductCard } from "./types";
 
 const STORE = process.env.SHOPIFY_STORE_DOMAIN ?? site.shopifyStore;
@@ -40,6 +41,16 @@ export type ShopifyCollection = {
   parentId?: number;
 };
 
+function withStorefrontAvailability(p: ShopifyProduct): ShopifyProduct {
+  return {
+    ...p,
+    variants: p.variants.map((v) => ({
+      ...v,
+      available: storefrontAvailable(v.available),
+    })),
+  };
+}
+
 async function shopifyFetch<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     next: { revalidate: 600 },
@@ -66,7 +77,7 @@ export function toProductCard(p: ShopifyProduct): ProductCard {
     compareAt,
     savingPct: savingPercent(price, compareAt),
     onSale: compareAt !== null && compareAt > price,
-    available: v?.available ?? false,
+    available: storefrontAvailable(v?.available),
     variantId: v?.id ?? 0,
     productId: p.id,
   };
@@ -84,14 +95,14 @@ export async function getAllProducts(): Promise<ShopifyProduct[]> {
     if (data.products.length < 250) break;
     page++;
   }
-  return all.filter((p) => p.title && p.handle);
+  return all.filter((p) => p.title && p.handle).map(withStorefrontAvailability);
 }
 
 export async function getProduct(handle: string) {
   const data = await shopifyFetch<{ product: ShopifyProduct }>(
     `/products/${handle}.json`,
   );
-  return data.product;
+  return withStorefrontAvailability(data.product);
 }
 
 export async function getCollections() {
@@ -107,7 +118,7 @@ export async function getCollectionProducts(handle: string) {
   const data = await shopifyFetch<{ products: ShopifyProduct[] }>(
     `/collections/${handle}/products.json?limit=250`,
   );
-  return data.products;
+  return data.products.map(withStorefrontAvailability);
 }
 
 export function shopifyCheckoutUrl(items: { variantId: number; qty: number }[]) {

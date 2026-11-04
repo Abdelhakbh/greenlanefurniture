@@ -182,9 +182,7 @@ export default async function ProductPage({
     priceCurrency: "GBP",
     price: Number.parseFloat(v.price).toFixed(2),
     itemCondition: "https://schema.org/NewCondition",
-    availability: v.available
-      ? "https://schema.org/InStock"
-      : "https://schema.org/OutOfStock",
+    availability: "https://schema.org/InStock",
   });
 
   const productLd = hasColours

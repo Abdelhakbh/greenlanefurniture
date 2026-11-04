@@ -1,4 +1,5 @@
 import { parseMoney, savingPercent } from "./format";
+import { storefrontAvailable } from "./storefront-availability";
 import type {
   ProductCard,
   StoreCollection,
@@ -105,7 +106,7 @@ function variantFromSimple(p: WooProduct): StoreVariant {
     title: "Default Title",
     price,
     compare_at_price: compare,
-    available: p.stock_status === "instock",
+    available: storefrontAvailable(p.stock_status === "instock"),
     option1: null,
     option2: null,
     option3: null,
@@ -123,7 +124,7 @@ function variantFromWoo(v: WooVariation): StoreVariant {
     title: opts.join(" / ") || "Default Title",
     price: v.price || v.regular_price || "0",
     compare_at_price: compare,
-    available: v.stock_status === "instock",
+    available: storefrontAvailable(v.stock_status === "instock"),
     option1: opts[0] ?? null,
     option2: opts[1] ?? null,
     option3: opts[2] ?? null,
@@ -155,7 +156,7 @@ function variantFromVariableSummary(p: WooProduct): StoreVariant {
     title: "Default Title",
     price,
     compare_at_price: compare,
-    available: p.stock_status !== "outofstock",
+    available: storefrontAvailable(p.stock_status !== "outofstock"),
     option1: null,
     option2: null,
     option3: null,
@@ -226,7 +227,7 @@ export function toProductCard(p: StoreProduct): ProductCard {
     compareAt,
     savingPct: savingPercent(price, compareAt),
     onSale: compareAt !== null && compareAt > price,
-    available: v?.available ?? false,
+    available: storefrontAvailable(v?.available),
     variantId: v?.id ?? p.id,
     productId: p.id,
   };

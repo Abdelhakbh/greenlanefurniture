@@ -77,7 +77,7 @@ function itemXml(product: StoreProduct, variant: StoreVariant) {
     ...additional.map(
       (src) => `      <g:additional_image_link>${escapeXml(src)}</g:additional_image_link>`,
     ),
-    `      <g:availability>${variant.available ? "in_stock" : "out_of_stock"}</g:availability>`,
+    "      <g:availability>in_stock</g:availability>",
     `      <g:price>${formatGmcPrice(price)}</g:price>`,
     "      <g:condition>new</g:condition>",
     `      <g:brand>${escapeXml(site.name)}</g:brand>`,
