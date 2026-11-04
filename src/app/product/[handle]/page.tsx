@@ -11,6 +11,7 @@ import { ProductGallery } from "@/components/product-gallery";
 import { ReviewStars } from "@/components/product-reviews";
 import { ProductTabs } from "@/components/product-tabs";
 
+import { CheckoutPaymentMethods } from "@/components/checkout-payment-methods";
 import { ProductTrustGrid } from "@/components/product-trust-grid";
 
 import { cleanProductHtml } from "@/lib/clean-html";
@@ -368,7 +369,7 @@ export default async function ProductPage({
 
           </p>
 
-
+          <CheckoutPaymentMethods variant="product" className="mt-4" />
 
           <ProductTrustGrid />
 
