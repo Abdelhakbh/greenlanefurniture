@@ -3,8 +3,11 @@
  * Maps Woo cart lines → Shopify variant IDs for checkout redirect.
  */
 
+import { getWooVariation } from "@/lib/woocommerce";
+
 type ShopifyVariant = {
   id: number;
+  title?: string;
   option1: string | null;
   option2: string | null;
   option3: string | null;
@@ -22,7 +25,11 @@ export type CheckoutCartLine = {
   handle: string;
   qty: number;
   attributes?: Record<string, string>;
+  /** e.g. "Bed Size: King Size" when attributes missing from saved cart */
+  optionLabel?: string;
   title?: string;
+  wooProductId?: number;
+  wooVariantId?: number;
 };
 
 const cache = new Map<string, { at: number; product: ShopifyProduct | null }>();
@@ -201,16 +208,59 @@ export async function syncAllShopifyInventory() {
 async function getProductByHandle(handle: string): Promise<ShopifyProduct | null> {
   const hit = cache.get(handle);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.product;
+
   const data = await adminGet<{ products: ShopifyProduct[] }>(
-    `/products.json?handle=${encodeURIComponent(handle)}&limit=1&fields=id,handle,options,variants`,
+    `/products.json?handle=${encodeURIComponent(handle)}&limit=1`,
   );
-  const product = data.products?.[0] ?? null;
+  const base = data.products?.[0] ?? null;
+  if (!base?.id) {
+    cache.set(handle, { at: Date.now(), product: null });
+    return null;
+  }
+
+  const vdata = await adminGet<{ variants: ShopifyVariant[] }>(
+    `/products/${base.id}/variants.json?limit=250`,
+  );
+  const product: ShopifyProduct = {
+    ...base,
+    variants: vdata.variants ?? base.variants ?? [],
+  };
   cache.set(handle, { at: Date.now(), product });
   return product;
 }
 
 function normOptionValue(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .replace(/[^\w\s&-]/g, "");
+}
+
+function normalizeSizeLabel(value: string) {
+  const v = normOptionValue(value);
+  if (v === "king" || v === "kingsize" || v === "king-size") return "king size";
+  if (v === "superking" || v === "super-king") return "super king";
+  if (v === "small double" || v === "small-double") return "small double";
+  return v;
+}
+
+function collectLineAttributes(line: CheckoutCartLine): Record<string, string> {
+  const merged: Record<string, string> = { ...(line.attributes ?? {}) };
+  if (line.optionLabel?.trim()) {
+    for (const part of line.optionLabel.split(" · ")) {
+      const chunk = part.trim();
+      if (!chunk) continue;
+      const colon = chunk.indexOf(":");
+      if (colon > 0) {
+        merged[chunk.slice(0, colon).trim()] = chunk.slice(colon + 1).trim();
+      } else if (!Object.keys(merged).length) {
+        merged.Option = chunk;
+      }
+    }
+  }
+  return merged;
 }
 
 function normOptionName(name: string) {
@@ -218,9 +268,15 @@ function normOptionName(name: string) {
 }
 
 function variantOptionValues(variant: ShopifyVariant) {
-  return [variant.option1, variant.option2, variant.option3]
+  const raw = [variant.option1, variant.option2, variant.option3, variant.title]
     .filter((v): v is string => Boolean(v && String(v).trim()))
-    .map((v) => normOptionValue(String(v)));
+    .map((v) => String(v));
+  const normalized = raw.flatMap((v) => {
+    const n = normOptionValue(v);
+    const size = normalizeSizeLabel(v);
+    return n === size ? [n] : [n, size];
+  });
+  return [...new Set(normalized)];
 }
 
 function variantMatchesByOptionNames(
@@ -239,11 +295,16 @@ function variantMatchesByOptionNames(
   for (let i = 0; i < product.options.length; i++) {
     const name = product.options[i]?.name;
     if (!name) continue;
-    const wanted = attrByNorm.get(normOptionName(name));
+    const wanted = normalizeSizeLabel(
+      attrByNorm.get(normOptionName(name)) ?? "",
+    );
     if (!wanted) continue;
     compared++;
     const actual = variant[`option${i + 1}` as keyof ShopifyVariant];
-    if (normOptionValue(String(actual ?? "")) !== wanted) return false;
+    const actualNorm = normalizeSizeLabel(String(actual ?? ""));
+    if (actualNorm !== wanted && normOptionValue(String(actual ?? "")) !== wanted) {
+      return false;
+    }
   }
   return compared > 0;
 }
@@ -251,18 +312,40 @@ function variantMatchesByOptionNames(
 function variantMatchesByValues(variant: ShopifyVariant, attributes: Record<string, string>) {
   const wanted = Object.values(attributes)
     .filter((v) => v?.trim())
-    .map((v) => normOptionValue(v));
+    .flatMap((v) => {
+      const n = normOptionValue(v);
+      const s = normalizeSizeLabel(v);
+      return n === s ? [n] : [n, s];
+    });
   if (!wanted.length) return false;
   const options = variantOptionValues(variant);
   return wanted.every((w) => options.includes(w));
 }
 
-function pickVariant(product: ShopifyProduct, attributes?: Record<string, string>) {
+function scoreVariantMatch(variant: ShopifyVariant, attributes: Record<string, string>) {
+  const wanted = Object.values(attributes)
+    .filter((v) => v?.trim())
+    .flatMap((v) => {
+      const n = normOptionValue(v);
+      const s = normalizeSizeLabel(v);
+      return n === s ? [n] : [n, s];
+    });
+  if (!wanted.length) return 0;
+  const options = variantOptionValues(variant);
+  let score = 0;
+  for (const w of wanted) {
+    if (options.includes(w)) score += 2;
+    else if (options.some((o) => o.includes(w) || w.includes(o))) score += 1;
+  }
+  return score;
+}
+
+function pickVariant(product: ShopifyProduct, line: CheckoutCartLine) {
   if (!product.variants.length) return null;
   if (product.variants.length === 1) return product.variants[0];
 
-  const attrs = attributes && Object.keys(attributes).length ? attributes : undefined;
-  if (!attrs) return null;
+  const attrs = collectLineAttributes(line);
+  if (!Object.keys(attrs).length) return product.variants[0] ?? null;
 
   const byName = product.variants.find((v) =>
     variantMatchesByOptionNames(product, v, attrs),
@@ -270,7 +353,74 @@ function pickVariant(product: ShopifyProduct, attributes?: Record<string, string
   if (byName) return byName;
 
   const byValues = product.variants.find((v) => variantMatchesByValues(v, attrs));
-  return byValues ?? null;
+  if (byValues) return byValues;
+
+  const scored = product.variants
+    .map((v) => ({ v, score: scoreVariantMatch(v, attrs) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  if (scored.length === 1 || (scored.length > 1 && scored[0].score > scored[1].score)) {
+    return scored[0].v;
+  }
+
+  const singleValue = Object.values(attrs).filter((v) => v?.trim());
+  if (singleValue.length === 1) {
+    const w = normalizeSizeLabel(singleValue[0]!);
+    const exact = product.variants.find((v) =>
+      variantOptionValues(v).includes(w),
+    );
+    if (exact) return exact;
+  }
+
+  return null;
+}
+
+async function createShopifyVariantFromWoo(
+  product: ShopifyProduct,
+  wooProductId: number,
+  wooVariantId: number,
+): Promise<ShopifyVariant | null> {
+  let wooVar;
+  try {
+    wooVar = await getWooVariation(wooProductId, wooVariantId);
+  } catch {
+    return null;
+  }
+  if (!wooVar?.attributes?.length) return null;
+
+  const opts = ["", "", ""] as string[];
+  for (let i = 0; i < product.options.length && i < 3; i++) {
+    const optName = product.options[i]?.name;
+    const match = wooVar.attributes.find(
+      (a) =>
+        normOptionName(a.name) === normOptionName(optName ?? a.name),
+    );
+    opts[i] = match?.option ?? wooVar.attributes[i]?.option ?? "";
+  }
+  if (!opts[0] && wooVar.attributes[0]) {
+    opts[0] = wooVar.attributes[0].option;
+  }
+
+  const price = wooVar.price || wooVar.regular_price;
+  if (!price) return null;
+
+  const data = await adminPost<{ variant: ShopifyVariant }>(
+    `/products/${product.id}/variants.json`,
+    {
+      variant: {
+        option1: opts[0] || null,
+        option2: opts[1] || null,
+        option3: opts[2] || null,
+        price,
+        inventory_policy: "continue",
+        inventory_management: null,
+      },
+    },
+  );
+
+  cache.delete(product.handle);
+  return data.variant ?? null;
 }
 
 export function shopifyCartCheckoutUrl(items: { variantId: number; qty: number }[]) {
@@ -292,7 +442,24 @@ export async function resolveShopifyCheckoutLines(lines: CheckoutCartLine[]) {
     if (!product) {
       throw new Error(`Product not found on Shopify: ${line.title ?? line.handle}`);
     }
-    const variant = pickVariant(product, line.attributes);
+    let variant = pickVariant(product, line);
+    if (
+      !variant &&
+      line.wooProductId &&
+      line.wooVariantId &&
+      line.wooVariantId !== line.wooProductId
+    ) {
+      variant = await createShopifyVariantFromWoo(
+        product,
+        line.wooProductId,
+        line.wooVariantId,
+      );
+      if (variant) {
+        const refreshed = await getProductByHandle(line.handle);
+        variant =
+          refreshed?.variants.find((v) => v.id === variant!.id) ?? variant;
+      }
+    }
     if (!variant) {
       throw new Error(
         `Could not match variant on Shopify for ${line.title ?? line.handle}. Try re-selecting options.`,

@@ -34,7 +34,10 @@ type Body = {
     handle: string;
     qty: number;
     attributes?: Record<string, string>;
+    optionLabel?: string;
     title?: string;
+    wooProductId?: number;
+    wooVariantId?: number;
   }[];
 };
 

@@ -272,6 +272,18 @@ export async function getAllProductsWithVariants(): Promise<StoreProduct[]> {
   return mapped.filter((p) => p.title && p.handle);
 }
 
+export async function getWooVariation(productId: number, variationId: number) {
+  try {
+    return await wooFetch<WooVariation>(
+      `/products/${productId}/variations/${variationId}`,
+      0,
+      true,
+    );
+  } catch {
+    return null;
+  }
+}
+
 export async function getProduct(handle: string) {
   const found = await wooFetch<WooProduct[]>(
     `/products?slug=${encodeURIComponent(handle)}&status=publish`,

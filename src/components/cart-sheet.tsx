@@ -131,7 +131,10 @@ export function CartSheet() {
                       handle: l.handle,
                       qty: l.qty,
                       attributes: l.attributes,
+                      optionLabel: l.optionLabel,
                       title: l.title,
+                      wooProductId: l.productId,
+                      wooVariantId: l.variantId,
                     })),
                   );
                 } catch (e) {
