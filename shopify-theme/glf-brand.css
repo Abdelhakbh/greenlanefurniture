@@ -210,11 +210,48 @@ button[name="add"],
   min-height: 72px;
 }
 
-/* —— Green Lane home hero (replaces full-width banner) —— */
+/* —— Green Lane home hero (matches greenlanefurniture.co.uk) —— */
 .section-glf-hero,
 .glf-hero {
+  position: relative;
   background: var(--glf-bone-dim);
   overflow: hidden;
+}
+
+.glf-hero--with-bg {
+  background: transparent;
+}
+
+.glf-hero__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.glf-hero__bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.glf-hero__bg-scrim {
+  position: absolute;
+  inset: 0;
+  /* Light scrim so text stays readable (opacity scales with theme setting) */
+  background: linear-gradient(
+    135deg,
+    rgba(247, 245, 240, calc(0.15 + var(--glf-hero-bg-opacity, 0.55) * 0.55)) 0%,
+    rgba(247, 245, 240, calc(0.05 + var(--glf-hero-bg-opacity, 0.55) * 0.25)) 50%,
+    rgba(232, 240, 230, calc(var(--glf-hero-bg-opacity, 0.55) * 0.35)) 100%
+  );
+  pointer-events: none;
+}
+
+.glf-hero--with-bg .glf-hero__grid {
+  position: relative;
+  z-index: 1;
 }
 
 .glf-hero__grid {

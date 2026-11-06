@@ -1,0 +1,225 @@
+{
+  "sections": {
+    "image_banner": {
+      "type": "image-banner",
+      "disabled": true,
+      "blocks": {
+        "heading": {
+          "type": "heading",
+          "settings": {
+            "heading": "Furniture for every home",
+            "heading_size": "h1"
+          }
+        },
+        "text_UHtDRR": {
+          "type": "text",
+          "settings": {
+            "text": "Quality sofas, beds and home furniture from our Birmingham showroom on Green Lane.",
+            "text_style": "body"
+          }
+        },
+        "button": {
+          "type": "buttons",
+          "settings": {
+            "button_label_1": "Browse the shop",
+            "button_link_1": "shopify://collections/all",
+            "button_style_secondary_1": false,
+            "button_label_2": "Visit or call us",
+            "button_link_2": "/pages/contact",
+            "button_style_secondary_2": true
+          }
+        }
+      },
+      "block_order": [
+        "heading",
+        "text_UHtDRR",
+        "button"
+      ],
+      "settings": {
+        "image": "",
+        "image_overlay_opacity": 0,
+        "image_height": "large",
+        "image_behavior": "none",
+        "desktop_content_position": "middle-left",
+        "desktop_content_alignment": "left",
+        "show_text_box": false,
+        "color_scheme": "scheme-5",
+        "stack_images_on_mobile": false,
+        "mobile_content_alignment": "left",
+        "show_text_below": false
+      }
+    },
+    "glf_home_hero_main": {
+      "type": "glf-home-hero",
+      "settings": {
+        "eyebrow": "Birmingham showroom",
+        "heading": "Furniture for every home",
+        "subheading": "Quality sofas, beds and home furniture from our Birmingham showroom on Green Lane.",
+        "button_primary_label": "Browse the shop",
+        "button_primary_link": "shopify://collections/all",
+        "button_secondary_label": "Visit or call us",
+        "button_secondary_link": "/pages/contact",
+        "image": "",
+        "image_url": "",
+        "image_alt": "Living room with Green Lane Furniture sofa",
+        "full_bleed_background": true,
+        "background_overlay": 55
+      }
+    },
+    "rich_text_wAx9QJ": {
+      "type": "rich-text",
+      "blocks": {
+        "heading_pLBbh9": {
+          "type": "heading",
+          "settings": {
+            "heading": "Shop by room",
+            "heading_size": "h2"
+          }
+        },
+        "text_tyB7mb": {
+          "type": "text",
+          "disabled": true,
+          "settings": {
+            "text": "<p>Share information about your brand with your customers. Describe a product, make announcements, or welcome customers to your store.</p>"
+          }
+        },
+        "button_cgNwAV": {
+          "type": "button",
+          "disabled": true,
+          "settings": {
+            "button_label": "Button label",
+            "button_link": "",
+            "button_style_secondary": false,
+            "button_label_2": "",
+            "button_link_2": "",
+            "button_style_secondary_2": false
+          }
+        }
+      },
+      "block_order": [
+        "heading_pLBbh9",
+        "text_tyB7mb",
+        "button_cgNwAV"
+      ],
+      "name": "t:sections.rich-text.presets.name",
+      "settings": {
+        "desktop_content_position": "center",
+        "content_alignment": "center",
+        "color_scheme": "",
+        "full_width": true,
+        "padding_top": 36,
+        "padding_bottom": 12
+      }
+    },
+    "3collectons_custom_tG3fKM": {
+      "type": "3collectons-custom",
+      "name": "Three Collections",
+      "settings": {
+        "collection_1": "sofas-armchairs",
+        "collection_2": "ottoman-beds",
+        "collection_3": "footstools-ottomans"
+      }
+    },
+    "featured_collection": {
+      "type": "featured-collection",
+      "settings": {
+        "collection": "all",
+        "products_to_show": 8,
+        "title": "Featured pieces",
+        "heading_size": "h2",
+        "description": "",
+        "show_description": false,
+        "description_style": "body",
+        "columns_desktop": 4,
+        "enable_desktop_slider": false,
+        "full_width": false,
+        "show_view_all": true,
+        "view_all_style": "solid",
+        "color_scheme": "scheme-2",
+        "image_ratio": "portrait",
+        "image_shape": "default",
+        "show_secondary_image": true,
+        "show_vendor": false,
+        "show_rating": false,
+        "quick_add": "none",
+        "columns_mobile": "2",
+        "swipe_on_mobile": false,
+        "padding_top": 52,
+        "padding_bottom": 0
+      }
+    },
+    "image_with_text_3fyf3d": {
+      "type": "image-with-text",
+      "blocks": {
+        "heading_FrXtcc": {
+          "type": "heading",
+          "settings": {
+            "heading": "We're here to help",
+            "heading_size": "h2"
+          }
+        },
+        "text_TA87rf": {
+          "type": "text",
+          "settings": {
+            "text": "<p>Green Lane Furniture hand-picks sofas, beds, dining and storage for UK homes — comfort, quality and fair prices.</p><p>Not sure about sizes or delivery? Call <strong>+44 7414 892530</strong> or email <strong>contact@greenlanefurniture.co.uk</strong>. We aim to reply within one working day.</p>",
+            "text_style": "body"
+          }
+        }
+      },
+      "block_order": [
+        "heading_FrXtcc",
+        "text_TA87rf"
+      ],
+      "name": "t:sections.image-with-text.presets.name",
+      "settings": {
+        "image": "",
+        "height": "medium",
+        "desktop_image_width": "medium",
+        "layout": "image_first",
+        "image_behavior": "none",
+        "content_layout": "no-overlap",
+        "desktop_content_position": "middle",
+        "desktop_content_alignment": "left",
+        "mobile_content_alignment": "left",
+        "section_color_scheme": "",
+        "color_scheme": "scheme-2",
+        "padding_top": 80,
+        "padding_bottom": 80
+      }
+    },
+    "four_grid_cards_prgzNH": {
+      "type": "four-grid-cards",
+      "disabled": false,
+      "name": "Four Grid Cards",
+      "settings": {
+        "title_1": "Free UK delivery",
+        "desc_1": "Free delivery across mainland UK · tracked furniture carriers · typical 3–10 working days",
+        "title_2": "Showroom & support",
+        "desc_2": "510-512 Green Lane, Birmingham — Monday–Saturday 9am–6pm",
+        "title_3": "14-day returns",
+        "desc_3": "Unused stock furniture can usually be returned within 14 days of delivery.",
+        "title_4": "Contact us",
+        "desc_4": "contact@greenlanefurniture.co.uk · +44 7414 892530"
+      }
+    },
+    "custom_liquid_tea8Tf": {
+      "type": "custom-liquid",
+      "name": "t:sections.custom-liquid.presets.name",
+      "settings": {
+        "custom_liquid": "<style>\n\n.orbi-faq{\n    background:#f5f2ea;\n    padding:70px 20px;\n    font-family:var(--font-body-family);\n}\n\n.orbi-faq-container{\n    max-width:900px;\n    margin:0 auto;\n}\n\n.orbi-faq-title{\n    text-align:center;\n    font-family:var(--font-heading-family);\n    font-size:38px;\n    color:#222;\n    margin-bottom:12px;\n    font-weight:500;\n}\n\n.orbi-faq-subtitle{\n    text-align:center;\n    font-family:var(--font-body-family);\n    color:#666;\n    font-size:15px;\n    margin-bottom:45px;\n}\n\n.orbi-faq-item{\n    background:#fff;\n    border-radius:15px;\n    margin-bottom:16px;\n    box-shadow:0 3px 14px rgba(0,0,0,.06);\n    overflow:hidden;\n}\n\n.orbi-faq-question{\n    padding:22px 28px;\n    cursor:pointer;\n    display:flex;\n    justify-content:space-between;\n    align-items:center;\n    font-family:var(--font-body-family);\n    font-size:18px;\n    font-weight:500;\n    color:#222;\n}\n\n.orbi-faq-icon{\n    font-size:27px;\n    color:#9b7d43;\n    transition:.3s;\n}\n\n.orbi-faq-answer{\n    max-height:0;\n    overflow:hidden;\n    transition:max-height .35s ease;\n}\n\n.orbi-faq-answer p{\n    padding:0 28px 22px;\n    font-family:var(--font-body-family);\n    color:#666;\n    line-height:1.7;\n    font-size:14px;\n}\n\n.orbi-faq-item.active .orbi-faq-answer{\n    max-height:250px;\n}\n\n.orbi-faq-item.active .orbi-faq-icon{\n    transform:rotate(45deg);\n}\n\n\n@media(max-width:768px){\n\n.orbi-faq{\n    padding:50px 15px;\n}\n\n.orbi-faq-title{\n    font-size:30px;\n}\n\n.orbi-faq-subtitle{\n    font-size:14px;\n    margin-bottom:35px;\n}\n\n.orbi-faq-question{\n    font-size:16px;\n    padding:18px 20px;\n}\n\n.orbi-faq-icon{\n    font-size:24px;\n}\n\n.orbi-faq-answer p{\n    padding:0 20px 18px;\n    font-size:14px;\n}\n\n}\n\n</style>\n\n\n<section class=\"orbi-faq\">\n<div class=\"orbi-faq-container\">\n<h2 class=\"orbi-faq-title\">\nFrequently Asked Questions\n</h2>\n<p class=\"orbi-faq-subtitle\">\nEverything you need to know about our furniture, delivery, returns and support.\n</p>\n\n<div class=\"orbi-faq-item\">\n<div class=\"orbi-faq-question\">\n<span>What products does Green Lane Furniture offer?</span>\n<span class=\"orbi-faq-icon\">+</span>\n</div>\n<div class=\"orbi-faq-answer\">\n<p>\nWe offer a carefully selected range of home furniture, including sofas and sofa beds, armchairs and loveseats, ottoman storage beds, footstools and ottomans, designed for modern UK homes.\n</p>\n</div>\n</div>\n\n<div class=\"orbi-faq-item\">\n<div class=\"orbi-faq-question\">\n<span>How do I choose the right sofa or bed size?</span>\n<span class=\"orbi-faq-icon\">+</span>\n</div>\n<div class=\"orbi-faq-answer\">\n<p>\nMeasure your room, doorways, stairs and hallways before ordering. Every product page lists the dimensions, and our team can help you check that a piece will fit and get into your home.\n</p>\n</div>\n</div>\n\n<div class=\"orbi-faq-item\">\n<div class=\"orbi-faq-question\">\n<span>How long does delivery take?</span>\n<span class=\"orbi-faq-icon\">+</span>\n</div>\n<div class=\"orbi-faq-answer\">\n<p>\nOrders placed before 2:00 PM (UK time) on a business day are processed the same day. Standard UK delivery usually takes 5–8 business days and is free on all orders.\n</p>\n</div>\n</div>\n\n<div class=\"orbi-faq-item\">\n<div class=\"orbi-faq-question\">\n<span>What is your return policy?</span>\n<span class=\"orbi-faq-icon\">+</span>\n</div>\n<div class=\"orbi-faq-answer\">\n<p>\nYou can return eligible new and unused items within 14 days of receiving your order. Please contact our support team before sending a return. Your statutory rights are not affected.\n</p>\n</div>\n</div>\n\n<div class=\"orbi-faq-item\">\n<div class=\"orbi-faq-question\">\n<span>Do you offer assembly?</span>\n<span class=\"orbi-faq-icon\">+</span>\n</div>\n<div class=\"orbi-faq-answer\">\n<p>\nMany of our items arrive ready to use or need only simple assembly with instructions included. Contact us before ordering if you would like to ask about assembly support for your area.\n</p>\n</div>\n</div>\n\n<div class=\"orbi-faq-item\">\n<div class=\"orbi-faq-question\">\n<span>How can I contact customer support?</span>\n<span class=\"orbi-faq-icon\">+</span>\n</div>\n<div class=\"orbi-faq-answer\">\n<p>\nOur team is available Monday to Friday, 9:00 AM – 6:00 PM (UK time). Email contact@greenlanefurniture.co.uk or call +44 7414 892530. We aim to reply to all enquiries within one business day.\n</p>\n</div>\n</div>\n\n</div>\n</section>\n\n<script>\n\ndocument.querySelectorAll(\".orbi-faq-question\").forEach(function(question){\n\nquestion.addEventListener(\"click\",function(){\n\nconst item=this.parentElement;\n\ndocument.querySelectorAll(\".orbi-faq-item\").forEach(function(i){\n\nif(i!==item){\ni.classList.remove(\"active\");\n}\n\n});\n\nitem.classList.toggle(\"active\");\n\n});\n\n});\n\n</script>",
+        "color_scheme": "",
+        "padding_top": 40,
+        "padding_bottom": 52
+      }
+    }
+  },
+  "order": [
+    "glf_home_hero_main",
+    "rich_text_wAx9QJ",
+    "3collectons_custom_tG3fKM",
+    "featured_collection",
+    "image_with_text_3fyf3d",
+    "four_grid_cards_prgzNH",
+    "custom_liquid_tea8Tf"
+  ]
+}

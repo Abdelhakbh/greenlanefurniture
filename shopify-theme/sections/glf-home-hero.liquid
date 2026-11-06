@@ -1,0 +1,182 @@
+{%- liquid
+  assign hero_img = section.settings.image
+  assign hero_img_url = section.settings.image_url | strip
+  if hero_img == blank and hero_img_url == blank
+    assign hero_img_url = 'https://images.unsplash.com/photo-1618221195710-dd6b41fa6046?auto=format&fit=crop&w=1600&q=85'
+  endif
+-%}
+<section
+  class="glf-hero{% if section.settings.full_bleed_background %} glf-hero--with-bg{% endif %}"
+  id="glf-home-hero"
+  style="--glf-hero-bg-opacity: {{ section.settings.background_overlay | times: 0.01 }};"
+>
+  {%- if section.settings.full_bleed_background -%}
+    <div class="glf-hero__bg" aria-hidden="true">
+      {%- if hero_img != blank -%}
+        {{
+          hero_img
+          | image_url: width: 1920
+          | image_tag:
+            loading: 'eager',
+            fetchpriority: 'high',
+            class: 'glf-hero__bg-img',
+            sizes: '100vw',
+            widths: '800, 1200, 1600, 1920',
+            alt: ''
+        }}
+      {%- else -%}
+        <img
+          src="{{ hero_img_url | escape }}"
+          alt=""
+          class="glf-hero__bg-img"
+          width="1920"
+          height="1080"
+          loading="eager"
+          fetchpriority="high"
+        >
+      {%- endif -%}
+      <span class="glf-hero__bg-scrim"></span>
+    </div>
+  {%- endif -%}
+
+  <div class="glf-hero__grid page-width">
+    <div class="glf-hero__content">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="glf-hero__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+      {%- endif -%}
+      {%- if section.settings.heading != blank -%}
+        <h1 class="glf-hero__heading">{{ section.settings.heading | escape }}</h1>
+      {%- endif -%}
+      {%- if section.settings.subheading != blank -%}
+        <p class="glf-hero__sub">{{ section.settings.subheading | escape }}</p>
+      {%- endif -%}
+      <div class="glf-hero__actions">
+        {%- if section.settings.button_primary_label != blank -%}
+          <a href="{{ section.settings.button_primary_link }}" class="glf-hero__btn glf-hero__btn--primary">
+            {{ section.settings.button_primary_label | escape }}
+          </a>
+        {%- endif -%}
+        {%- if section.settings.button_secondary_label != blank -%}
+          <a href="{{ section.settings.button_secondary_link }}" class="glf-hero__btn glf-hero__btn--secondary">
+            {{ section.settings.button_secondary_label | escape }}
+          </a>
+        {%- endif -%}
+      </div>
+    </div>
+    <div class="glf-hero__media">
+      {%- if hero_img != blank -%}
+        {{
+          hero_img
+          | image_url: width: 1400
+          | image_tag:
+            loading: 'eager',
+            fetchpriority: 'high',
+            sizes: '(min-width: 990px) 50vw, 100vw',
+            widths: '600, 900, 1200, 1400',
+            class: 'glf-hero__img',
+            alt: section.settings.image_alt
+        }}
+      {%- elsif hero_img_url != blank -%}
+        <img
+          src="{{ hero_img_url | escape }}"
+          alt="{{ section.settings.image_alt | escape }}"
+          class="glf-hero__img"
+          loading="eager"
+          fetchpriority="high"
+          width="1200"
+          height="960"
+        >
+      {%- endif -%}
+      <span class="glf-hero__media-shade" aria-hidden="true"></span>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "GLF Home Hero",
+  "tag": "section",
+  "class": "section-glf-hero",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Birmingham showroom"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Furniture for every home"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Quality sofas, beds and home furniture from our Birmingham showroom on Green Lane."
+    },
+    {
+      "type": "text",
+      "id": "button_primary_label",
+      "label": "Primary button label",
+      "default": "Browse the shop"
+    },
+    {
+      "type": "url",
+      "id": "button_primary_link",
+      "label": "Primary button link"
+    },
+    {
+      "type": "text",
+      "id": "button_secondary_label",
+      "label": "Secondary button label",
+      "default": "Visit or call us"
+    },
+    {
+      "type": "url",
+      "id": "button_secondary_link",
+      "label": "Secondary button link"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Hero image (optional)"
+    },
+    {
+      "type": "url",
+      "id": "image_url",
+      "label": "Hero image URL (if no image uploaded)",
+      "info": "Leave empty to use the built-in interior photo (same as the main site)."
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text",
+      "default": "Living room with Green Lane Furniture sofa"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_bleed_background",
+      "label": "Full-width background image",
+      "default": true,
+      "info": "Matches greenlanefurniture.co.uk — soft photo behind the hero section"
+    },
+    {
+      "type": "range",
+      "id": "background_overlay",
+      "min": 0,
+      "max": 85,
+      "step": 5,
+      "unit": "%",
+      "label": "Background tint strength",
+      "default": 55
+    }
+  ],
+  "presets": [
+    {
+      "name": "GLF Home Hero"
+    }
+  ]
+}
+{% endschema %}
